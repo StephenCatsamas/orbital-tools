@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 #Function: rK4 
 #Inputs: 
@@ -37,15 +38,15 @@ def rK4(t0, y0, h, system):
 # bound - if larger than zero will print a warming if solution is further from origin than value  
 #Returns:
 #    array [[x_i,y_i,t_i]] of solution to system over time from t0 to t0+stop.
-def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0):
+def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0, error = 0):
     do_dyn_step = h_adj
     ##set first entry of output array to initial conditions
     loc= z0
     
-    t0 = z0[0,2]
-    
+    t0 = z0[0,-1]
+ 
     #define array to give maximum acceptible error
-    error = np.array([[1E-9,1E-9]])
+    # error = np.array([[1E-9,1E-9,1E-9,1E-9]])
     
     #find abs max norm of vector for later comparison (\Delta_0)
     merror = np.max(np.abs(error))
@@ -53,8 +54,8 @@ def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0):
     #set initial dynamic step size to initial step size
     hdyn = h
     
-    #loc[-1][2] is the latest step time, we want to itterate untill we have gotten to this time
-    while(stop+t0 - loc[-1][2] > 0):
+    #loc[-1][-1] is the latest step time, we want to itterate untill we have gotten to this time
+    while(stop+t0 - loc[-1][-1] > 0):
     
         try:
             #enable or disable dynamic step size
@@ -67,20 +68,21 @@ def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0):
                 while(retry_flag):
 
                     #take one double step in the solution
-                    loc1=rK4(loc[-1][2], loc[-1][0:2], 2*hdyn, system)
+                    loc1=rK4(loc[-1][-1], loc[-1][0:-1], 2*hdyn, system)
 
                     #take two steps in the solution
-                    loc_hf=rK4(loc[-1][2], loc[-1][0:2], hdyn, system)
-                    loc2=rK4(loc_hf[2], loc_hf[0:2], hdyn, system)
+                    loc_hf=rK4(loc[-1][-1], loc[-1][0:-1], hdyn, system)
+                    loc2=rK4(loc_hf[-1], loc_hf[0:-1], hdyn, system)
 
                     #note here that loc is an array which defines a state vector, loc[i][0:2] defines the x,y position
                     #and loc[i][2] is the time
 
                     #take the difference of the double step and 2 steps solution positions as an estimate for the error (\Delta_1)
-                    delta = loc1[0:2] - loc2[0:2]
+                    delta = loc1[0:-1] - loc2[0:-1]
 
                     #find the abs max norm of the error
                     mdelta = np.max(np.abs(delta))
+
 
                     #this if-statement is the dynamic step size adjustment
                     if mdelta <= merror:
@@ -97,7 +99,7 @@ def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0):
             else:
                     #if not using dynmic step size then we just need to
                     #take a step in the solution
-                    loc2=rK4(loc[-1][2], loc[-1][0:2], hdyn, system)
+                    loc2=rK4(loc[-1][-1], loc[-1][0:-1], hdyn, system)
         except ValueError:
             break
             
@@ -109,15 +111,15 @@ def stepper(z0, stop, system, h = 0.01, h_adj = True, bound = 0):
         
         #if the most recent step oversteps the endpoint, we will should not append this point
         #and set the step size to the distance to the endpoint 
-        if (stop+t0 - loc2[2] < 0):
-                hdyn = stop+t0 - loc[-1][2]
+        if (stop+t0 - loc2[-1] < 0):
+                hdyn = stop+t0 - loc[-1][-1]
                 do_dyn_step = False
                 continue
                 
         #another error that we should check for is if the step size is zero
         #this is generally caused by a floating point math error
         #it is hard to handle this error, so we will just exit and warn the user
-        if (loc[-1][2] == loc2[2]):
+        if (loc[-1][-1] == loc2[-1]):
             print('Loop error')
             break
         
