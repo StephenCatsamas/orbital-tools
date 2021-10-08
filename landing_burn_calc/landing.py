@@ -2,58 +2,118 @@ from math import *
 import matplotlib.pyplot as plt
 import numpy as np
 import solver
+import csv
 
 print("====LANDING BURN CALULATOR====")
-print("rev: 0.1.0")
+print("rev: 0.2.0")
 print("==============================")
 
-#Minmus
-# rs = 60E3;#surface height
-# G = 6.67E-11;
-# M = 2.6457E19;
-# T = 40400;
-
-#Mun
-rsea = 200E3;#surface height
-rs = 4E3 + rsea;#surface height
 G = 6.67E-11;
-M = 9.76E20;
-T = 138984;
-
-#define initial contitions
-z0 = np.array([[11E3+rs,0,0,550/(11E3+rs),0]])#x,y,t
-#define initial step size
+##step size error
+err = 1E-3
+err = np.array([[100*err,err,err,err]])
 
 
-err = 1E-4
-err = np.array([[100*err,100*err,err,err]])
 
-vfs = 2*pi/T;
+class statestruct():
+    def __init__(self):
+        self.complete = False;
+        self.body = None;
+        self.rlh = float('nan');
+        self.height = float('nan');
+        self.azvel = float('nan');
+        self.rsea = float('nan');
+        self.rs = float('nan');
+        self.M = float('nan');
+        self.T = float('nan');
+        self.z0 = np.array([[float('nan'),float('nan'),float('nan'),float('nan')]]);
+        self.vfs = float('nan');
 
-def print_init_cond():
-    print("Planet Radius:", round(rsea,0), "m")
-    print("Landing Height:", round(rs,0), "m," , round(rs-rsea,0), "m (ASL)")
-    print("Planet Mass:", round(M,3), "kg")
-    print("Planet Day Length:", round(T,3), "s")
-    print("Initial Height:", round(z0[0,0],0), "m,", round(z0[0,0]-rsea,0), "m (ASL),", round(z0[0,0]-rs,0), "m (AGL)")
-    print("Initial Azumith:", round(z0[0,1],3), "rad")
-    print("Initial Radial Velocity:", round(z0[0,2],2), "m/s")
-    print("Initial Azumith Velocity:", round(z0[0,3]*z0[0,0],3), "m/s")
-    vr = z0[0,2]
-    vf = z0[0,3]
-    r = z0[0,0]
-    vo = sqrt(vr*vr + r*vf*r*vf)
-    vs = sqrt(vr*vr + (r*vf - rs* vfs)*(r*vf - rs* vfs))
-    print("Initial Velocity:", round(vo,1), "m/s (Orbital),", round(vs,1), "m/s (Surface)")
+    def orbit(self, i, v):
+        if i == 0:
+            self.body = v.strip()
+        if i == 1:
+            self.rlh = float(v)
+        if i == 2:
+            self.height = float(v)
+        if i == 3:
+            self.z0[0,1] = float(v)
+        if i == 4:
+            self.z0[0,2] = float(v)
+        if i == 5:
+            self.azvel = float(v)
+
+    def planet(self, i, v):
+        if i == 0:
+            self.rsea = float(v)
+        if i == 1:
+            self.M = float(v)
+        if i == 2:
+            self.T = float(v)
+
+state = statestruct();
+
+
+
+def load_init():
+    with open('orbit.dat') as csvfile:
+        orbit_r = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for i,row in enumerate(orbit_r):
+            state.orbit(i,row[1])
+    with open('planets.dat') as csvfile:
+        planet_r = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for i,row in enumerate(planet_r):
+            if row[0] == state.body:
+                for i in range(len(row)-1):
+                    state.planet(i , row[i+1]);
+                break;
+                
+                
+    state.rs = state.rsea + state.rlh;
+    state.vfs = 2*pi/state.T;
+    state.z0[0,0] = state.height + state.rsea
+    state.z0[0,3] = state.azvel / state.z0[0,0]
+
     
 
-def get_TWR(thrust, r = rs):
+def round_non(v,n):
+    if(isnan(v)):
+        return "---"
+    else:
+        return round(v,n)
+
+def print_int_cond():
+    print("1. Planet Radius:", round_non(state.rsea,0), "m")
+    print("2. Landing Height:", round_non(state.rs,0), "m," , round_non(state.rs-state.rsea,0), "m (ASL)")
+    print("3. Planet Mass:", round_non(state.M,3), "kg")
+    print("4. Planet Day Length:", round_non(state.T,3), "s")
+    print("5. Initial Height:", round_non(state.z0[0,0],0), "m,", round_non(state.z0[0,0]-state.rsea,0), "m (ASL),", round_non(state.z0[0,0]-state.rs,0), "m (AGL)")
+    print("5. Initial Azumith:", round_non(state.z0[0,1],3), "rad")
+    print("6. Initial Radial Velocity:", round_non(state.z0[0,2],2), "m/s")
+    print("7. Initial Azumith Velocity:", round_non(state.z0[0,3]*state.z0[0,0],3), "m/s")
+    vr = state.z0[0,2]
+    vf = state.z0[0,3]
+    r = state.z0[0,0]
+    vo = sqrt(vr*vr + r*vf*r*vf)
+    vs = sqrt(vr*vr + (r*vf - state.rs* state.vfs)*(r*vf - state.rs* state.vfs))
+    print("8. Initial Velocity:", round_non(vo,1), "m/s (Orbital),", round_non(vs,1), "m/s (Surface)")
+    
+
+def check_key(chr):
+    keys = [str(i) for i in range(1,9)]
+    if chr in keys:
+        return True
+    else:
+        return False
+        
+
+def get_TWR(thrust, r = state.rs):
     m = 1
-    TWR = thrust / (G*M*m/(r*r))
+    TWR = thrust / (G*state.M*m/(r*r))
     return TWR
-def get_thrust(TWR, r = rs):
+def get_thrust(TWR, r = state.rs):
     m = 1
-    thrust = TWR * (G*M*m/(r*r))
+    thrust = TWR * (G*state.M*m/(r*r))
     return thrust
 
 #Function: landing_system
@@ -72,7 +132,7 @@ def landing_config(thrust):
         #trust
         t = thrust#TWRc*G*M*m/(rs*rs);
         #decompose to retrograde burn
-        v = sqrt(vr*vr + (r*vf - rs* vfs)*(r*vf - rs* vfs))##accounting for surface rotation rs*vfs
+        v = sqrt(vr*vr + (r*vf - state.rs* state.vfs)*(r*vf - state.rs* state.vfs))##accounting for surface rotation rs*vfs
 
         if(v > 1):
             tr = -vr/v * t
@@ -102,7 +162,13 @@ def intersect(A,B,C,D):
 
 
 def main():
-    print_init_cond()
+
+    load_init()
+    print_int_cond()
+
+    exit();
+    
+    
     solution = False
     
     h  = 1
