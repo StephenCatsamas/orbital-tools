@@ -26,7 +26,7 @@ class statestruct():
         self.rs = float('nan');
         self.M = float('nan');
         self.T = float('nan');
-        self.z0 = np.array([[float('nan'),float('nan'),float('nan'),float('nan')]]);
+        self.z0 = np.array([[float('nan'),float('nan'),float('nan'),float('nan'),0]]);
         self.vfs = float('nan');
 
     def orbit(self, i, v):
@@ -107,11 +107,11 @@ def check_key(chr):
         return False
         
 
-def get_TWR(thrust, r = state.rs):
+def get_TWR(thrust,r):
     m = 1
     TWR = thrust / (G*state.M*m/(r*r))
     return TWR
-def get_thrust(TWR, r = state.rs):
+def get_thrust(TWR,r):
     m = 1
     thrust = TWR * (G*state.M*m/(r*r))
     return thrust
@@ -136,12 +136,12 @@ def landing_config(thrust):
 
         if(v > 1):
             tr = -vr/v * t
-            tf = -(r*vf - rs* vfs)/v * t
+            tf = -(r*vf - state.rs* state.vfs)/v * t
         else:
             tr = t
             tf = 0
 
-        fG = - G*M*m/(r*r)
+        fG = - G*state.M*m/(r*r)
 
         #system of equations
         drdt = vr
@@ -159,19 +159,99 @@ def ccw(A,B,C):
 # Return true if line segments AB and CD intersect
 def intersect(A,B,C,D):
     return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+    
+def plot_results(vrmin, deltH, path):
+    print('=======Solution===============')    
+    print('Min Velocity:', round(vrmin,0), 'm/s')
+    print('Inflection Height:', round(deltH,0), 'm')
+    
+    fig = plt.figure(figsize=(10,8)) 
+    ax = fig.add_subplot(2, 2, 1) 
+    ax2 = fig.add_subplot(2, 2, 2) 
+    ax3 = fig.add_subplot(2, 2, 3) 
+    ax4 = fig.add_subplot(2, 2, 4) 
+    
+    fs = [f - state.vfs*t for f,t in zip(path[:,1],path[:,4])]
+    
+    ax.plot(fs,path[:,0])
+    ax.set_xlabel('Surface Azumith $\phi$ (rad)');
+    ax.set_ylabel('Radius $r$ (m)');
+    ax.axhline(state.rs, color='r')
+    ax2.plot(path[:,0],path[:,2])
+    ax2.set_xlabel('Radius $r$ (m)');
+    ax2.set_ylabel('Radial Velocity $v_r$ (m/s)');
+    ax2.axvline(state.rs, color='r')
+    ax2.axhline(0, color='r')
+    ax2.invert_xaxis()
+    ax2.invert_yaxis()
+    ax3.plot(path[:,4],path[:,0])
+    ax3.set_xlabel('Time $t$ (s)');
+    ax3.set_ylabel('Radius $r$ (m)');
+    ax3.axhline(state.rs, color='r')
+    
+    vsrfs = [sqrt(vr*vr + (r*vf - state.rs* state.vfs)*(r*vf - state.rs* state.vfs)) for r,vr,vf in zip(path[:,0],path[:,2],path[:,3])]
+    
+    ax4.plot(path[:,0],vsrfs)
+    ax4.set_xlabel('Radius $r$ (m)');
+    ax4.set_ylabel('Surface Velocity $v_s$ (m/s)');
+    ax4.axvline(state.rs, color='r')
+    ax4.axhline(0, color='r')
+    ax4.invert_xaxis()
+    plt.show() 
 
+
+#IMPLEMENTATION NEEDED
+
+##lets think about what it means to be landed
+##i think in this context it should be one of 3 things
+##1. we are below the surface
+##2. we are between the surface and initial height and going up
+##3. we are above a threshold height
+##4. we have simulated for too long
+
+def is_landed(path):
+    r,f,vr,vf,t= path[-1]
+    if((vr > 0) and (abs(vr) >= abs(r*vf - state.rs*state.vfs))):
+        return True
+    else:
+        return False
+
+def has_sol(path):
+    end_r = [state.rs,state.rs+150]
+    end_vr = [-3,3]
+
+    #find if we have a solution which passes through our solution box
+    for i,vec in enumerate(path):
+        r,f,vr,vf,t= vec
+        #case that one of the points lies in the box
+        if ((end_r[0] <= r <= end_r[1]) and (end_vr[0] <= vr <= end_vr[1])):
+            return True
+        else:
+        #case that the line segment crosses the box
+            r1 = r;
+            vr1 = vr;
+            r2 = path[i-1][0]
+            vr2 = path[i-1][2]
+            #check all line segements
+            for i in range(4):
+                #generate box vertex coordinates
+                ir = 1 if (i%4) < 2 else 0
+                jr = 1 if ((i+1)%4) < 2 else 0
+                ivr = 1 if ((i+1)%4) < 2 else 0
+                jvr = 1 if (i%4) < 2 else 0
+                if(intersect([r1,vr1],
+                            [r2,vr2],
+                            [end_r[ir],end_vr[ivr]],
+                            [end_r[jr],end_vr[jvr]])):
+                    return True
+        return False
 
 def main():
 
     load_init()
     print_int_cond()
-
-    exit();
-    
     
     solution = False
-    
-    h  = 1
     
     thrust = 5
     dthrust = 0.0001
@@ -183,11 +263,10 @@ def main():
 
     print('=======Solving TWR============')
     while(not solution):
-        # solution = True
-        allloc = z0
+        allloc = state.z0
         landed = False;
         
-        TWR = get_TWR(thrust)
+        TWR = get_TWR(thrust, state.z0[0,0])
         print("TWR:", round(TWR,5))
         if(TWR <= 1):
             print("error system will not converge")
@@ -197,61 +276,28 @@ def main():
         while( not landed):
             #solve the test ODE
             stloc = np.array([allloc[-1]])
-            loc = solver.stepper(stloc, 10, system, h, h_adj = True, error = err)
+            loc = solver.stepper(stloc, 10, system, h_adj = True, error = err)
             allloc = np.vstack((allloc,loc))
 
-            r,f,vr,vf,t= allloc[-1]
-            
-            if((vr > 0) and (abs(vr) >= abs(r*vf - rs*vfs))):
-                landed = True
-        
-        end = [rs+0,rs+100,-3,3]
+            landed = is_landed(loc)
 
-        for i,vec in enumerate(loc):
-            r,f,vr,vf,t= vec
-            hit = False
-            #case that one of the points lies in the box
-            if ((end[0] <= r <= end[1]) and (end[2] <= vr <= end[3])):
-                hit = True
-                break;
-                # print('e')
-            else:
-            #case that the line segment crosses the box
-                if(i != 0):
-                    r1 = r;
-                    vr1 = vr;
-                    r2 = loc[i-1][0]
-                    vr2 = loc[i-1][2]
-                   
-                    if(intersect([r1,vr1],[r2,vr2],[end[1],end[2]],[end[1],end[3]])):
-                        hit = True
-                        break;
-                        # print('a')
-                    if(intersect([r1,vr1],[r2,vr2],[end[1],end[3]],[end[0],end[3]])):
-                        hit = True
-                        break;
-                        # print('b')
-                    if(intersect([r1,vr1],[r2,vr2],[end[0],end[3]],[end[0],end[2]])):
-                        hit = True
-                        break;
-                        # print('c')
-                    if(intersect([r1,vr1],[r2,vr2],[end[0],end[2]],[end[1],end[2]])):
-                        hit = True
-                        break;
-                        # print('d')
+        solution = has_sol(loc);
 
-        solution = hit
         vrmin = None
+        
+        # find height difference
         for vec in allloc:
             r,f,vr,vf,t = vec
             
-            if(abs(vr) >= abs(r*vf - rs*vfs)):
+            #logic for end of decent
+            if(abs(vr) >= abs(r*vf - state.rs*state.vfs)):
                 if(vrmin == None):
                     vrmin = abs(vr)
                 if(abs(vr) <= vrmin):
                     vrmin = abs(vr)
-                    deltH = r-rs
+                    deltH = r-state.rs
                     
+        #biseciton method root finding
         if(not(thrusthighset and thrustlowset)):
             if(deltH > 0):
                  thrusthighset = True
@@ -259,12 +305,12 @@ def main():
             else:
                  thrustlowset = True
                  thrustlow = thrust
-            TWR = get_TWR(thrust)
+            TWR = get_TWR(thrust, state.z0[0,0])
             if(not thrusthighset):
                 TWR = 1 + 2*(TWR-1)
             elif(not thrustlowset):
                 TWR = 1 + 0.5*(TWR-1)
-            thrust = get_thrust(TWR)
+            thrust = get_thrust(TWR, state.z0[0,0])
         if(thrusthighset and thrustlowset):
             if(deltH > 0):
                 if(thrust > thrusthigh):
@@ -276,39 +322,10 @@ def main():
                 thrustlow = thrust
             thrust = (thrusthigh + thrustlow)/2
 
-        TWR = get_TWR(thrust)
+        TWR = get_TWR(thrust, state.z0[0,0])
         if(TWR < 1.005):
-            thrust = get_thrust(1.005);
-        
-    print('=======Solution===============')    
-    print('Min Velocity:', round(vrmin,0), 'm/s')
-    print('Inflection Height:', round(deltH,0), 'm')
+            thrust = get_thrust(1.005, state.z0[0,0]);
     
-    fig = plt.figure(figsize=(10,8)) 
-    ax = fig.add_subplot(2, 2, 1) 
-    ax2 = fig.add_subplot(2, 2, 2) 
-    ax3 = fig.add_subplot(2, 2, 3) 
-    ax4 = fig.add_subplot(2, 2, 4) 
-    ax.plot(allloc[:,1],allloc[:,0])
-    ax.set_xlabel('Azumith $\phi$ (rad)');
-    ax.set_ylabel('Radius $r$ (m)');
-    ax.axhline(rs, color='r')
-    ax2.plot(allloc[:,0],allloc[:,2])
-    ax2.set_xlabel('Radius $r$ (m)');
-    ax2.set_ylabel('Radial Velocity $v_r$ (m/s)');
-    ax2.axvline(rs, color='r')
-    ax3.plot(allloc[:,4],allloc[:,0])
-    ax3.set_xlabel('Time $t$ (s)');
-    ax3.set_ylabel('Radius $r$ (m)');
-    ax3.axhline(rs, color='r')
-    
-    vsrfs = [sqrt(vr*vr + (r*vf - rs* vfs)*(r*vf - rs* vfs)) for vr,vf in zip(allloc[:,2],allloc[:,3])]
-    
-    ax4.plot(allloc[:,0],vsrfs)
-    ax4.set_xlabel('Radius $r$ (m)');
-    ax4.set_ylabel('Surface Velocity $v_s$ (m/s)');
-    ax4.axvline(rs, color='r')
-    ax4.invert_xaxis()
-    plt.show() 
+    plot_results(vrmin, deltH, allloc)
 
 main();
