@@ -29,6 +29,8 @@ class statestruct():
         self.T = float('nan');
         self.z0 = np.array([[float('nan'),float('nan'),float('nan'),float('nan'),0]]);
         self.vfs = float('nan');
+        self.end_r = [100,200]#above landing zone
+        self.end_vr = [-3,3]
 
     def orbit(self, i, v):
         if i == 0:
@@ -74,6 +76,8 @@ def load_init():
     state.vfs = 2*pi/state.T;
     state.z0[0,0] = state.height + state.rsea
     state.z0[0,3] = state.azvel / state.z0[0,0]
+    state.end_r[0] += state.rs;
+    state.end_r[1] += state.rs;
 
     
 
@@ -141,6 +145,17 @@ def landing_config(thrust):
         else:
             tr = t
             tf = 0
+            
+        # if(v > 1):
+            # if(vr < 0):
+                # tr = -vr/v * t
+                # tf = -(r*vf - state.rs* state.vfs)/v * t
+            # else:
+                # tr = 0;
+                # tf = t;
+        # else:
+            # tr = t
+            # tf = 0
 
         fG = - G*state.M*m/(r*r)
 
@@ -164,7 +179,7 @@ def intersect(A,B,C,D):
 def plot_results(vrmin, deltH, path):
     print('=======Solution===============')    
     print('Min Velocity:', round(vrmin,0), 'm/s')
-    print('Inflection Height:', round(deltH,0), 'm')
+    print('Inflection Height:', round(deltH+np.mean(state.end_r)-state.rs,0), 'm')
     
     fig = plt.figure(figsize=(10,8)) 
     ax = fig.add_subplot(2, 2, 1) 
@@ -217,17 +232,17 @@ def is_landed(path):
     else:
         return False
 
-def has_sol(path):
-    end_r = [state.rs,state.rs+150]
-    end_vr = [-3,3]
 
+
+def has_sol(path):
+    end_r = state.end_r
+    end_vr = state.end_vr
+    
     #find if we have a solution which passes through our solution box
     for i,vec in enumerate(path):
-
         r,f,vr,vf,t= vec
         #case that one of the points lies in the box
         if ((end_r[0] <= r <= end_r[1]) and (end_vr[0] <= vr <= end_vr[1])):
-            
             return True
         else:
         #case that the line segment crosses the box
@@ -239,9 +254,9 @@ def has_sol(path):
                 #check all line segements
                 for k in range(4):
                     #generate box vertex coordinates
-                    ir =  [0,1,1,0][k]
+                    ir  = [0,1,1,0][k]
                     ivr = [0,0,1,1][k]
-                    jr =  [1,1,0,0][k]
+                    jr  = [1,1,0,0][k]
                     jvr = [0,1,1,0][k]
                     if(intersect([r1,vr1],
                                 [r2,vr2],
@@ -267,7 +282,7 @@ def get_error(path):
                 vrmin = abs(vr)
             if(abs(vr) <= vrmin):
                 vrmin = abs(vr)
-                deltH = r-state.rs
+                deltH = r-np.mean(state.end_r)
                 
     return deltH,vrmin
 
@@ -291,21 +306,7 @@ def run(thrust):
         
     deltH, vrmin = get_error(allloc) 
     return deltH, vrmin, allloc
-
-def phase_distance(thrust):
-    thrust = thrust[0]
-    H, V,path = run(thrust)
-    print(H)
-    norm = abs(H)#abs(max((H/err[0,0])*errsl,(V/err[0,2])*errsl))
-    return norm
-
-def scipy_has_sol(thrust, state):
-    if(state.fun > 5):
-        return False
-    else:
-        dH, vrMin, path = run(thrust)
-        return has_sol(path)
-            
+           
 def bisection(x, v, uB, lB):
     if(v>0):
         uB = x
