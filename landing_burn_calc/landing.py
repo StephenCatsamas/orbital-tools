@@ -1,5 +1,6 @@
 from math import *
 import matplotlib.pyplot as plt
+from scipy.optimize import minimize
 import numpy as np
 import solver
 import csv
@@ -10,8 +11,8 @@ print("==============================")
 
 G = 6.67E-11;
 ##step size error
-err = 1E-3
-err = np.array([[100*err,err,err,err]])
+errsl = 1E-3
+err = np.array([[100*errsl,errsl,errsl,errsl]])
 
 
 
@@ -210,7 +211,7 @@ def plot_results(vrmin, deltH, path):
 ##4. we have simulated for too long
 
 def is_landed(path):
-    r,f,vr,vf,t= path[-1]
+    r,f,vr,vf,t = path[-1]
     if((vr > 0) and (abs(vr) >= abs(r*vf - state.rs*state.vfs))):
         return True
     else:
@@ -222,110 +223,127 @@ def has_sol(path):
 
     #find if we have a solution which passes through our solution box
     for i,vec in enumerate(path):
+
         r,f,vr,vf,t= vec
         #case that one of the points lies in the box
         if ((end_r[0] <= r <= end_r[1]) and (end_vr[0] <= vr <= end_vr[1])):
+            
             return True
         else:
         #case that the line segment crosses the box
-            r1 = r;
-            vr1 = vr;
-            r2 = path[i-1][0]
-            vr2 = path[i-1][2]
-            #check all line segements
-            for i in range(4):
-                #generate box vertex coordinates
-                ir = 1 if (i%4) < 2 else 0
-                jr = 1 if ((i+1)%4) < 2 else 0
-                ivr = 1 if ((i+1)%4) < 2 else 0
-                jvr = 1 if (i%4) < 2 else 0
-                if(intersect([r1,vr1],
-                            [r2,vr2],
-                            [end_r[ir],end_vr[ivr]],
-                            [end_r[jr],end_vr[jvr]])):
-                    return True
+            if(i > 0):
+                r1 = r;
+                vr1 = vr;
+                r2 = path[i-1][0]
+                vr2 = path[i-1][2]
+                #check all line segements
+                for k in range(4):
+                    #generate box vertex coordinates
+                    ir =  [0,1,1,0][k]
+                    ivr = [0,0,1,1][k]
+                    jr =  [1,1,0,0][k]
+                    jvr = [0,1,1,0][k]
+                    if(intersect([r1,vr1],
+                                [r2,vr2],
+                                [end_r[ir],end_vr[ivr]],
+                                [end_r[jr],end_vr[jvr]])):
+                        plt.plot([r1,r2],[vr1,vr2])
+                        plt.plot([end_r[ir],end_r[jr]],[end_vr[ivr],end_vr[jvr]] )
+                        plt.show()
+                        return True
+    return False
+
+
+def get_error(path):
+    vrmin = None
+    
+    # find height difference
+    for vec in path:
+        r,f,vr,vf,t = vec
+        
+        #logic for end of decent
+        if(abs(vr) >= abs(r*vf - state.rs*state.vfs)):
+            if(vrmin == None):
+                vrmin = abs(vr)
+            if(abs(vr) <= vrmin):
+                vrmin = abs(vr)
+                deltH = r-state.rs
+                
+    return deltH,vrmin
+
+def run(thrust):
+
+    allloc = state.z0
+    landed = False;
+    
+    TWR = get_TWR(thrust, state.z0[0,0])
+    print("TWR:", np.round(TWR,5))
+    
+    system = landing_config(thrust)
+
+    while( not landed):
+        #solve the test ODE
+        stloc = np.array([allloc[-1]])
+        loc = solver.stepper(stloc, 10, system, h_adj = True, error = err)
+        allloc = np.vstack((allloc,loc))
+
+        landed = is_landed(loc)
+        
+    deltH, vrmin = get_error(allloc) 
+    return deltH, vrmin, allloc
+
+def phase_distance(thrust):
+    thrust = thrust[0]
+    H, V,path = run(thrust)
+    print(H)
+    norm = abs(H)#abs(max((H/err[0,0])*errsl,(V/err[0,2])*errsl))
+    return norm
+
+def scipy_has_sol(thrust, state):
+    if(state.fun > 5):
         return False
+    else:
+        dH, vrMin, path = run(thrust)
+        return has_sol(path)
+            
+def bisection(x, v, uB, lB):
+    if(v>0):
+        uB = x
+    elif(v < 0):
+        lB = x
+    
+    x = (uB + lB) / 2
+    return x, uB, lB
+    
+def solve_BVP():
+    cThrust = get_thrust(2, state.rs)
+    lThrust = get_thrust(1, state.rs)
+    hThrust = get_thrust(1E3, state.rs)
+    maxiter = 50
+    suc = False
+    for i in range(maxiter):
+        
+        dZ, vrMin, path = run(cThrust)
+        if(has_sol(path)):
+            suc = True
+            break
+    
+        cThrust, hThrust, lThrust = bisection(cThrust, dZ, hThrust, lThrust)
+    
+    return cThrust, suc
+                
 
 def main():
-
     load_init()
     print_int_cond()
-    
-    solution = False
-    
-    thrust = 5
-    dthrust = 0.0001
-
-    thrusthigh = 1
-    thrustlow = 1
-    thrusthighset = False
-    thrustlowset = False
 
     print('=======Solving TWR============')
-    while(not solution):
-        allloc = state.z0
-        landed = False;
-        
-        TWR = get_TWR(thrust, state.z0[0,0])
-        print("TWR:", round(TWR,5))
-        if(TWR <= 1):
-            print("error system will not converge")
-            exit()
-        system = landing_config(thrust)
+    thrust, suc = solve_BVP()
 
-        while( not landed):
-            #solve the test ODE
-            stloc = np.array([allloc[-1]])
-            loc = solver.stepper(stloc, 10, system, h_adj = True, error = err)
-            allloc = np.vstack((allloc,loc))
-
-            landed = is_landed(loc)
-
-        solution = has_sol(loc);
-
-        vrmin = None
-        
-        # find height difference
-        for vec in allloc:
-            r,f,vr,vf,t = vec
-            
-            #logic for end of decent
-            if(abs(vr) >= abs(r*vf - state.rs*state.vfs)):
-                if(vrmin == None):
-                    vrmin = abs(vr)
-                if(abs(vr) <= vrmin):
-                    vrmin = abs(vr)
-                    deltH = r-state.rs
-                    
-        #biseciton method root finding
-        if(not(thrusthighset and thrustlowset)):
-            if(deltH > 0):
-                 thrusthighset = True
-                 thrusthigh = thrust
-            else:
-                 thrustlowset = True
-                 thrustlow = thrust
-            TWR = get_TWR(thrust, state.z0[0,0])
-            if(not thrusthighset):
-                TWR = 1 + 2*(TWR-1)
-            elif(not thrustlowset):
-                TWR = 1 + 0.5*(TWR-1)
-            thrust = get_thrust(TWR, state.z0[0,0])
-        if(thrusthighset and thrustlowset):
-            if(deltH > 0):
-                if(thrust > thrusthigh):
-                    print('thrust not bounded')
-                thrusthigh = thrust
-            else:
-                if(thrust < thrustlow):
-                    print('thrust not bounded')
-                thrustlow = thrust
-            thrust = (thrusthigh + thrustlow)/2
-
-        TWR = get_TWR(thrust, state.z0[0,0])
-        if(TWR < 1.005):
-            thrust = get_thrust(1.005, state.z0[0,0]);
-    
-    plot_results(vrmin, deltH, allloc)
+    if(not suc):
+        print('Convergence Falure!')
+    else:
+        deltH, vrmin, path = run(thrust)
+        plot_results(vrmin, deltH, path)
 
 main();
