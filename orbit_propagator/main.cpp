@@ -1,71 +1,38 @@
 #include <stdio.h>
-
-#define PRINTFLT(var) printf("%s: %f\n", #var, var)
-
-int divides(int i, int j){
-    return i%j;
-}
-
-
-int primes(void){
-  for(int i = 1; i < 1E5; i++){
-        for(int j = 2; j < i/2 + 1; j++){
-            if(divides(i,j) == 0){
-                break;
-            }
-            if(j == i/2){
-                printf("Prime! %d\n", i);
-            }
-        }
-    }  
-    return 0;
-}
-
-struct quat {
-    double r;
-    double i;
-    double j;
-    double k;
-    
-    quat& operator+ (const quat& q){
-    r += q.r;    
-    i += q.i;    
-    j += q.j;    
-    k += q.k;
-    return *this;
-    }
-    
-    quat& operator* (const quat& q){
-    double rt = r*q.r - i*q.i - j*q.j - k*q.k;    
-    double it = r*q.i + i*q.r - k*q.j + j*q.k;    
-    double jt = r*q.j + j*q.r + k*q.i - i*q.k;    
-    double kt = r*q.k + k*q.r - j*q.i + i*q.j;
-    r = rt;
-    i = it;
-    j = jt;
-    k = kt;
-    return *this;
-    }
-    
-};
+#include "util.h"
+#include "integrator.h"
 
 int main(int argc, char **argv){
 	printf("Quaternions!\n");
     
-    //primes();
-    struct quat q = {1,2,3,4};
-    struct quat p = {-4,-3,-2,-1};
+    double_v3 q = {3,4,5};
+    double_v3 p = {1,2,3};
+
+    q = q+p;
     
-    q = q*p;
+    PRINTDV3(q);
     
-    PRINTFLT(q.r);
-    PRINTFLT(q.i);
-    PRINTFLT(q.j);
-    PRINTFLT(q.k);
+    const int ts = 100;
+    double h = 0.1;
+    double zs[ts][2];
+    double z0[] = {0,1};
+    veccpy(zs[0],z0);
+    for(int i = 1; i < ts; i++){
+        rK4(zs[i-1], zs[i], h, expsys);
+    }
     
-    
+    FILE* fp = fopen("vis.dat", "w");
+    for(int i = 0; i < ts; i++){
+    for(int j = 0; j < SYSDIM; j++){
+        fprintf(fp, "%f,", zs[i][j]);
+    }
+        fprintf(fp, "\n");
+    }
+
 	return 0;
 }
+
+
 
 
 
