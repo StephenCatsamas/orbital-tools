@@ -21,6 +21,8 @@ int main(int argc, char **argv){
         rK4(zs[i-1], zs[i], h, expsys);
     }
     
+    
+    
     FILE* fp = fopen("vis.dat", "w");
     for(int i = 0; i < ts; i++){
     for(int j = 0; j < SYSDIM; j++){
