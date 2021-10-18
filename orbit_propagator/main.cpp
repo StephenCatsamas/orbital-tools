@@ -1,6 +1,14 @@
+#include <vector>
+#include <array>
 #include <stdio.h>
 #include "util.h"
 #include "integrator.h"
+
+int expsys(double* z0, double* dz){
+    dz[1] = -z0[2];
+    dz[2] = z0[1];
+    return 0;    
+}
 
 int main(int argc, char **argv){
 	printf("Quaternions!\n");
@@ -12,21 +20,19 @@ int main(int argc, char **argv){
     
     PRINTDV3(q);
     
-    const int ts = 100;
-    double h = 0.1;
-    double zs[ts][2];
-    double z0[] = {0,1};
-    veccpy(zs[0],z0);
-    for(int i = 1; i < ts; i++){
-        rK4(zs[i-1], zs[i], h, expsys);
-    }
+    const int ts = 10;
+    double* error;
+
+    std::vector<std::array<double,SYSDIM>> path;
+    std::array<double, SYSDIM> z0 = {0,1};
+    path.push_back(z0);
     
-    
-    
+    stepper(path, ts, error, expsys);
+
     FILE* fp = fopen("vis.dat", "w");
-    for(int i = 0; i < ts; i++){
+    for(int i = 0; i < path.size(); i++){
     for(int j = 0; j < SYSDIM; j++){
-        fprintf(fp, "%f,", zs[i][j]);
+        fprintf(fp, "%f,", path[i][j]);
     }
         fprintf(fp, "\n");
     }

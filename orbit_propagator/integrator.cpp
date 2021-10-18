@@ -1,13 +1,8 @@
-#include <vector>
 #include <math.h>
 #include "util.h"
 #include "integrator.h"
 
-int expsys(double* z0, double* dz){
 
-    dz[1] = z0[1];
-    return 0;    
-}
 
 int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
     veccpy(z, z0);
@@ -71,32 +66,29 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
 }
 
 
-int stepper(double* z0, double** z, double t_stop, double* error, int (*system)(double*, double*)){
+int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double* error, int (*system)(double*, double*)){
     
     static double hdyn = 0.1;
     
-    std::vector<std::array<double,SYSDIM>> path;
-    
     std::array<double,SYSDIM> zc;
+    std::array<double,SYSDIM> z0;
 
     double loc_sf[SYSDIM];
     double loc_h1[SYSDIM];
     double loc_h2[SYSDIM];
     double delta[SYSDIM];
+    double ztmp[SYSDIM];
 
-    for(int i = 0; i < SYSDIM; i++){
-        zc[i] = z0[i];
-    }
+    veccpy(z0, path.back());
+
+    double error_norm = 1E-9;
     
-    path.push_back(zc);
-    
-    double error_norm = 1E-5;
-    
-    while(t_stop+z0[0] - path[-1][0] > 0){
+    while(t_stop+z0[0] - path.back()[0] > 0){
         bool got_accuracy = false;
-        while(not got_accuracy){           
-            rK4(path[-1], loc_sf, 2*hdyn, system);
-            rK4(path[-1], loc_h1, hdyn, system);
+        while(not got_accuracy){
+            veccpy(ztmp,path.back());
+            rK4(ztmp, loc_sf, 2*hdyn, system);
+            rK4(ztmp, loc_h1, hdyn, system);
             rK4(loc_h1, loc_h2, hdyn, system);
             
             for(int i = 1; i < SYSDIM; i++){
@@ -105,7 +97,7 @@ int stepper(double* z0, double** z, double t_stop, double* error, int (*system)(
             
             double delta_norm = 0;
             for(int i = 1; i< SYSDIM; i++){
-                double v = fabs(delta[i])
+                double v = fabs(delta[i]);
                 if(v > delta_norm){
                     delta_norm = v;
                 }
@@ -118,21 +110,17 @@ int stepper(double* z0, double** z, double t_stop, double* error, int (*system)(
                 got_accuracy = true;
             }else{
                 hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.25);
-                retry_flag = false;
+                got_accuracy = false;
             }  
         }
         if(t_stop+z0[0] - loc_h2[0] < 0){
-            hdyn = t_stop+z0[0] - loc_h2[0];
-            rK4(path[-1], loc_h2, hdyn, system);
+            hdyn = (t_stop+z0[0] - path.back()[0]);
+            veccpy(ztmp,path.back());
+            rK4(ztmp, loc_h2, hdyn, system);
         }
         
-        for(int i = 0; i < SYSDIM; i++){
-            zc[i] = loc_h2[i];
-        }        
+        veccpy(zc, loc_h2);//converts to std::array
         path.push_back(zc);
-    }
-    
-    z = malloc(path.size()*SYSDIM*sizeof(double));//or something or other
-    
+    }    
     return 0;
 }

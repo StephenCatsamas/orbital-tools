@@ -4,17 +4,18 @@ import csv
 
 t = []
 x = []
+y = []
 
 with open('vis.dat', newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter=',', quotechar='|')
     for row in reader:
         t.append(float(row[0]))
         x.append(float(row[1]))
+        y.append(float(row[2]))
 
 
 fig, ax = plt.subplots()
-ax.plot(t, x)
-xe = [exp(ta) for ta in t]
-ax.plot(t, xe)
+ax.plot(x,y)
+
 
 plt.show()

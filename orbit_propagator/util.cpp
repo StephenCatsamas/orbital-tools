@@ -7,6 +7,28 @@ int veccpy(double* a, double* b){
     return 0;
 }
 
+int veccpy(std::array<double,SYSDIM>& a, double* b){
+    for(int i = 0; i < SYSDIM; i++){
+        a[i] = b[i];
+    }
+    return 0;
+}
+
+int veccpy(double* a, std::array<double,SYSDIM>& b){
+    for(int i = 0; i < SYSDIM; i++){
+        a[i] = b[i];
+    }
+    return 0;
+}
+
+int veccpy(std::array<double,SYSDIM>& a, std::array<double,SYSDIM>& b){
+    for(int i = 0; i < SYSDIM; i++){
+        a[i] = b[i];
+    }
+    return 0;
+}
+
+
 quat& quat::operator+ (const quat& q){
     r += q.r;    
     i += q.i;    
