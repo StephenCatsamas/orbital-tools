@@ -105,11 +105,11 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
             
             if(delta_norm <= error_norm){
                 if(delta_norm != 0){
-                    hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.2);
+                    hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.2);//pow very costly
                 }
                 got_accuracy = true;
             }else{
-                hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.25);
+                hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.25);//pow very costly
                 got_accuracy = false;
             }  
         }

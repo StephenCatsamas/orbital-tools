@@ -20,7 +20,7 @@ int main(int argc, char **argv){
     
     PRINTDV3(q);
     
-    const int ts = 10;
+    const int ts = 1000000;
     double* error;
 
     std::vector<std::array<double,SYSDIM>> path;
@@ -30,12 +30,12 @@ int main(int argc, char **argv){
     stepper(path, ts, error, expsys);
 
     FILE* fp = fopen("vis.dat", "w");
-    for(int i = 0; i < path.size(); i++){
+    // for(int i = 0; i < path.size(); i++){
     for(int j = 0; j < SYSDIM; j++){
-        fprintf(fp, "%f,", path[i][j]);
+        fprintf(fp, "%f,", path[0][j]);
     }
         fprintf(fp, "\n");
-    }
+    // }
 
 	return 0;
 }
