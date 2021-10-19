@@ -1,4 +1,6 @@
+#include <math.h>
 #include "util.h"
+
 
 int veccpy(double* a, double* b){
     for(int i = 0; i < SYSDIM; i++){
@@ -49,17 +51,19 @@ quat& quat::operator* (const quat& q){
     return *this;
 }
 
-double_v3& double_v3::operator+ (const double_v3& v){ 
-    x += v.x;    
-    y += v.y;    
-    z += v.z;
+
+
+double_v3& double_v3::operator/ (const double a){ 
+    x /= a;    
+    y /= a;    
+    z /= a;
     return *this;
 }
 
-double_v3& double_v3::operator- (const double_v3& v){ 
-    x -= v.x;    
-    y -= v.y;    
-    z -= v.z;
+double_v3& double_v3::operator= (const double_v3& v){ 
+    x = v.x;    
+    y = v.y;    
+    z = v.z;
     return *this;
 }
 
@@ -70,8 +74,21 @@ bool double_v3::operator== (const double_v3& v){
         return false;
     }
 }
+double double_v3::mag(void) const{
+    return sqrt(x*x + y*y + z*z);
+}
+
+int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
+    a[0] = t;
+    a[1] = b.x;
+    a[2] = b.y;
+    a[3] = b.z;
+    a[4] = c.x;
+    a[5] = c.y;
+    a[6] = c.z;
+    return 0;
+}
 
 
-
-
-
+struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
+struct body moon = {7.342E22, 1737.4E6, 0, 2.3606E6};

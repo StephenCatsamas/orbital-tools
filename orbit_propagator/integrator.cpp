@@ -81,7 +81,7 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
 
     veccpy(z0, path.back());
 
-    double error_norm = 1E-9;
+    double error_norm = 1E-3;
     
     while(t_stop+z0[0] - path.back()[0] > 0){
         bool got_accuracy = false;
@@ -103,15 +103,9 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
                 }
             }
             
-            if(delta_norm <= error_norm){
-                if(delta_norm != 0){
-                    hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.2);//pow very costly
-                }
-                got_accuracy = true;
-            }else{
-                hdyn = 0.9 * hdyn * pow(error_norm/delta_norm, 0.25);//pow very costly
-                got_accuracy = false;
-            }  
+            hdyn = new_step_size(hdyn, delta_norm, error_norm);
+            if(delta_norm <= error_norm){got_accuracy = true;}
+            
         }
         if(t_stop+z0[0] - loc_h2[0] < 0){
             hdyn = (t_stop+z0[0] - path.back()[0]);
@@ -123,4 +117,49 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
         path.push_back(zc);
     }    
     return 0;
+}
+
+double new_step_size(double hdyn, double d_norm, double e_norm){
+    if(d_norm <= e_norm){
+        if(d_norm != 0){
+        hdyn *= 0.9 * Q_fqrt(e_norm/d_norm);//pow very costly
+        }
+    }else{
+        hdyn *= 0.9 * Q_qqrt(e_norm/d_norm);
+    }  
+    return hdyn;
+}
+
+//greater than unity only
+double Q_fqrt(double n){
+    if(n - 1 < 5){
+        return 1 + (n-1)/5;
+    }else{
+        return pow(n, 0.2);
+    }
+    
+    
+}
+
+double Q_qqrt(double n){
+    float number = (float)(n);
+    number = Q_rsqrt(Q_rsqrt(number));
+    n = (double)(number);
+    return n;
+}
+
+//quick inverse square root
+float Q_rsqrt(float number){
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );                
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+
+	return y;
 }
