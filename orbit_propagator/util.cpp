@@ -2,6 +2,7 @@
 #include "util.h"
 
 
+
 int veccpy(double* a, double* b){
     for(int i = 0; i < SYSDIM; i++){
         a[i] = b[i];
@@ -51,7 +52,11 @@ quat& quat::operator* (const quat& q){
     return *this;
 }
 
-
+//dot product
+double double_v3::operator* (const double_v3& r) const{ 
+    double inner = x*r.x + y*r.y + z*r.z;
+    return inner;
+}
 
 double_v3& double_v3::operator/ (const double a){ 
     x /= a;    
@@ -78,6 +83,12 @@ double double_v3::mag(void) const{
     return sqrt(x*x + y*y + z*z);
 }
 
+double double_v3::r(const double_v3& r) const{
+    double ip = (*this)*r;
+    double mag = r.mag();
+    return ip/mag;
+}
+
 int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
     a[0] = t;
     a[1] = b.x;
@@ -91,4 +102,4 @@ int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
 
 
 struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
-struct body moon = {7.342E22, 1737.4E6, 0, 2.3606E6};
+struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};

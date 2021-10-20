@@ -7,7 +7,11 @@
 #define PRINTINT(var) printf("%s: %d at %d\n ", #var, var, __LINE__)
 #define PRINTDV3(var) printf("%s: (%f,%f,%f) at %d\n ", #var, var.x, var.y, var.z, __LINE__)
 
+#define STRINGIFY(var) #var
+#define NAME(var) STRINGIFY(var)
+
 #define SYSDIM 7
+#define BODY moon
 
 #define G 6.67E-11
 
@@ -31,10 +35,12 @@ struct double_v3{
     double z;
     
     double_v3& operator/ (const double);
+    double operator* (const double_v3&) const;//dot product
     double_v3& operator= (const double_v3&);
     bool operator== (const double_v3&);
     
     double mag(void) const;
+    double r(const double_v3& r) const;
     
 };
 

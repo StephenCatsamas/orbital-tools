@@ -1,11 +1,56 @@
+#include <stdio.h>
 #include <math.h>
 #include "util.h"
 #include "integrator.h"
 
+#define R_LIMIT 10 //maximum height before termination (body radii)
+#define T_LIMIT 1E6 //maximum time for simulation (s)
 
+double t_stop;
+std::array<double,SYSDIM> zi;
+bool time_stop(const std::array<double,SYSDIM>& z){
+    return (t_stop - z[0] > 0);
+}
+
+int set_t_stop(const double t){
+    t_stop = t;
+    return 0;
+}
+
+
+bool landed(const std::array<double,SYSDIM>& z){
+    double t = z[0];
+    double_v3 r = {z[1],z[2],z[3]};
+    double_v3 v = {z[4], z[5], z[6]};
+    
+    //if our radius is less than the landing height
+    if(r.mag() < BODY.radius+BODY.landing_altitude){
+        printf("landing termination\n");
+        return 0;
+    }
+    //if we are between the initial height and surface and have a postive velocity
+    double_v3 r0 = {zi[1],zi[2],zi[3]};
+    if((r.mag() > BODY.radius+BODY.landing_altitude) 
+    and (r.mag() < r0.mag()) 
+    and (v.r(r) > 0)){
+        printf("re-orbit termination\n");
+        return 0;
+    }
+    if(r.mag() > R_LIMIT*BODY.radius){
+        printf("height termination\n");
+        return 0;
+    }
+    if(t - zi[0] > T_LIMIT){
+        printf("time termination\n");
+        return 0;
+    }
+    
+    return 1;
+}
 
 int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
     veccpy(z, z0);
+   
     //k1
     double k1[SYSDIM]; 
     system(z,k1);
@@ -66,7 +111,7 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
 }
 
 
-int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double* error, int (*system)(double*, double*)){
+int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(const std::array<double,SYSDIM>&), double* error, int (*system)(double*, double*)){
     
     static double hdyn = 0.1;
     
@@ -80,10 +125,10 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
     double ztmp[SYSDIM];
 
     veccpy(z0, path.back());
-
+    veccpy(zi, path.back());//save initial state in global variable
     double error_norm = 1E-3;
     
-    while(t_stop+z0[0] - path.back()[0] > 0){
+    while(check_stop(path.back())){
         bool got_accuracy = false;
         while(not got_accuracy){
             veccpy(ztmp,path.back());
@@ -107,15 +152,23 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, double t_stop, double*
             if(delta_norm <= error_norm){got_accuracy = true;}
             
         }
-        if(t_stop+z0[0] - loc_h2[0] < 0){
-            hdyn = (t_stop+z0[0] - path.back()[0]);
-            veccpy(ztmp,path.back());
-            rK4(ztmp, loc_h2, hdyn, system);
-        }
+        // if(t_stop+z0[0] - loc_h2[0] < 0){
+            // hdyn = (t_stop+z0[0] - path.back()[0]);
+            // veccpy(ztmp,path.back());
+            // rK4(ztmp, loc_h2, hdyn, system);
+        // }
         
         veccpy(zc, loc_h2);//converts to std::array
+#ifdef _DEBUG
+        if(path.size() > 5E4){
+        path.resize(1);
+        }
+#endif
         path.push_back(zc);
-    }    
+    }
+
+
+    
     return 0;
 }
 

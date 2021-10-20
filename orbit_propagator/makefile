@@ -12,7 +12,7 @@ run: all
 	
 profile: $(SRC) $(INC)
 	$(CC) -g -gdwarf-2 -shared-libgcc -D_DEBUG $(CFLAGS) $(SRC) -o $(OBJ)
-#-fno-pie -fno-builtin
+
 	
 debug: $(SRC) $(INC)
 	$(CC) $(CFLAGS) $(SRC) -g
