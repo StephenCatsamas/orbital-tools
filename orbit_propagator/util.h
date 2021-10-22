@@ -36,6 +36,7 @@ struct double_v3{
     
     double_v3& operator/ (const double);
     double operator* (const double_v3&) const;//dot product
+    double_v3& operator% (const double_v3&);//cross product
     double_v3& operator= (const double_v3&);
     bool operator== (const double_v3&);
     
@@ -74,6 +75,9 @@ struct body{
     double radius; //m
     double landing_altitude; //m
     double rotational_period;  //s
+    double_v3 w;
+    
+    void init2(void);//quite dodge
 };
 
 extern body earth;

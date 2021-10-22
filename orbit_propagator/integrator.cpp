@@ -16,8 +16,7 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
     double r_min = std::numeric_limits<double>::max();
     for(int i = 0; i < path.size(); i++){
         const double_v3 r = vec_unpack_r(path[i]);
-        const double_v3 v = vec_unpack_v(path[i]);
-    
+        
         double rr = r.mag();
         if(rr <= r_min){
             r_min = rr;
@@ -62,13 +61,14 @@ bool has_sol(const std::vector<std::array<double,SYSDIM>>& path){
     
     for(int i = path.size() - 1; i >= 0; i--){
         const double_v3 r = vec_unpack_r(path[i]);
-        const double_v3 v = vec_unpack_v(path[i]);
-        //if we have a point in the solution box
+        const double_v3 vs = BODY.w%r;//surface velocity (this is at user height but should be about equal when solved near surface)
+        const double_v3 v = (vec_unpack_v(path[i]) - vs);//relative surface velocity
+        
         if(ordered(e_r[0], r.r(r) , e_r[1]) and ordered(e_vr[0], v.r(r), e_vr[1])){
             return true;
         }else if (i != 0){
             const double_v3 r2 = vec_unpack_r(path[i-1]);
-            const double_v3 v2 = vec_unpack_v(path[i-1]);
+            const double_v3 v2 = (vec_unpack_v(path[i-1]) - vs);
             double rr1 = r.r(r);
             double rr2 = r2.r(r2);
             double vr1 = v.r(r);
