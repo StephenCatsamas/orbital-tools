@@ -40,6 +40,7 @@ struct double_v3{
     bool operator== (const double_v3&);
     
     double mag(void) const;
+    double_v3 unit(void) const;
     double r(const double_v3& r) const;
     
 };
@@ -82,7 +83,38 @@ extern body moon;
 int veccpy(double* a, double* b);
 int veccpy(std::array<double,SYSDIM>& a, double* b);
 int veccpy(double* a, std::array<double,SYSDIM>& b);
-int veccpy(std::array<double,SYSDIM>& a, std::array<double,SYSDIM>& b);
+int veccpy(std::array<double,SYSDIM>& a, const std::array<double,SYSDIM>& b);
+
 int vecpack(double* a, const double t, const double_v3& b, const double_v3& c);
+
+template<typename T>
+double vec_unpack_t(const T a){
+    return a[0];
+}
+
+template<typename T>
+double_v3 vec_unpack_r(const T a){
+    double_v3 v = {a[1], a[2], a[3]};
+    return v;
+}
+
+template<typename T>
+double_v3 vec_unpack_v(const T a){
+    double_v3 v = {a[4], a[5], a[6]};
+    return v;
+}
+
+template<typename T>
+bool ordered(T a){
+    return true;
+}
+template<typename T, typename... Args>
+bool ordered(T a, T b, Args... args) {
+  return (a <= b) and ordered(b, args...);
+}
+
+int mod(const int a, const int b);
+
+double TWR_to_thrust(double TWR, double R);
 
 #endif

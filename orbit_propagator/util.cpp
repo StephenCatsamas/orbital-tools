@@ -24,7 +24,7 @@ int veccpy(double* a, std::array<double,SYSDIM>& b){
     return 0;
 }
 
-int veccpy(std::array<double,SYSDIM>& a, std::array<double,SYSDIM>& b){
+int veccpy(std::array<double,SYSDIM>& a, const std::array<double,SYSDIM>& b){
     for(int i = 0; i < SYSDIM; i++){
         a[i] = b[i];
     }
@@ -83,6 +83,12 @@ double double_v3::mag(void) const{
     return sqrt(x*x + y*y + z*z);
 }
 
+double_v3 double_v3::unit(void) const{
+    double_v3 unit = *this;
+    unit = unit/unit.mag();
+    return unit;
+}
+
 double double_v3::r(const double_v3& r) const{
     double ip = (*this)*r;
     double mag = r.mag();
@@ -100,6 +106,20 @@ int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
     return 0;
 }
 
+
+int mod(const int a, const int b){
+    if (a >= 0){
+        return a%b;
+    }else{
+        return (a%b + b)%b;
+    }
+}
+
+double TWR_to_thrust(double TWR, double R){
+    double m = 1;
+    double thrust = TWR * (G*BODY.mass*m/(R*R));
+    return thrust;
+}
 
 struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
 struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};

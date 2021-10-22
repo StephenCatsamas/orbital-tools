@@ -1,10 +1,41 @@
 #include <stdio.h>
 #include <math.h>
+#include <limits>
 #include "util.h"
 #include "integrator.h"
 
 #define R_LIMIT 10 //maximum height before termination (body radii)
 #define T_LIMIT 1E6 //maximum time for simulation (s)
+
+
+const double e_vr[] = {-3, 3};
+const double e_r[] = {50+BODY.radius+BODY.landing_altitude, 150+BODY.radius+BODY.landing_altitude};
+double get_error(const std::vector<std::array<double,SYSDIM>>& path){
+    double deltH;
+    double r_tgt = 0.5*(e_r[0] + e_r[1]); //target height
+    double r_min = std::numeric_limits<double>::max();
+    for(int i = 0; i < path.size(); i++){
+        const double_v3 r = vec_unpack_r(path[i]);
+        const double_v3 v = vec_unpack_v(path[i]);
+    
+        double rr = r.mag();
+        if(rr <= r_min){
+            r_min = rr;
+            deltH = r.mag() - r_tgt;
+        }
+    }       
+    return deltH;
+}
+
+int bisect(double v, double* x, double* uB, double* lB){
+    if(v>0){
+        *uB = *x;
+    }else if(v < 0){
+        *lB = *x;
+    }
+    *x = (*uB + *lB) / 2;
+    return 0;
+}
 
 double t_stop;
 std::array<double,SYSDIM> zi;
@@ -14,6 +45,54 @@ bool time_stop(const std::array<double,SYSDIM>& z){
 
 int set_t_stop(const double t){
     t_stop = t;
+    return 0;
+}
+
+double ccw(double* A, double* B, double* C){
+    return (((C[1]-A[1]) * (B[0]-A[0])) > ((B[1]-A[1]) * (C[0]-A[0])));
+}
+    
+
+bool intersect(double* l1a, double* l1b, double* l2a, double* l2b){
+    return ccw(l1a,l2a,l2b) != ccw(l1b,l2a,l2b) and ccw(l1a,l1b,l2a) != ccw(l1a,l1b,l2b);
+}
+
+bool has_sol(const std::vector<std::array<double,SYSDIM>>& path){
+    const int boxlist[] = {0,1,1,0};
+    
+    for(int i = path.size() - 1; i >= 0; i--){
+        const double_v3 r = vec_unpack_r(path[i]);
+        const double_v3 v = vec_unpack_v(path[i]);
+        //if we have a point in the solution box
+        if(ordered(e_r[0], r.r(r) , e_r[1]) and ordered(e_vr[0], v.r(r), e_vr[1])){
+            return true;
+        }else if (i != 0){
+            const double_v3 r2 = vec_unpack_r(path[i-1]);
+            const double_v3 v2 = vec_unpack_v(path[i-1]);
+            double rr1 = r.r(r);
+            double rr2 = r2.r(r2);
+            double vr1 = v.r(r);
+            double vr2 = v2.r(r2);
+            
+            for(int j = 0; j < 4; j++){
+                int irr = boxlist[mod((j),4)];
+                int ivr = boxlist[mod((j-1),4)];
+                int jrr = boxlist[mod((j+1),4)];
+                int jvr = boxlist[mod((j),4)];
+                double l1a[] = {rr1, vr1};
+                double l1b[] = {rr2, vr2};
+                double l2a[] = {e_r[irr], e_vr[ivr]};
+                double l2b[] = {e_r[jrr], e_vr[jvr]};
+                if(intersect(l1a,l1b, l2a, l2b)){
+                    return true;
+                }
+            }
+            
+        }
+        
+        
+        
+    }
     return 0;
 }
 
@@ -112,7 +191,7 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
 
 
 int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(const std::array<double,SYSDIM>&), double* error, int (*system)(double*, double*)){
-    
+
     static double hdyn = 0.1;
     
     std::array<double,SYSDIM> zc;

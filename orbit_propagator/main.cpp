@@ -6,17 +6,21 @@
 #include "integrator.h"
 #include "main.h"
 
+double thrust = 1.813;
 
 int main(int argc, char **argv){
 	printf("Orbits!\n");
     
-    double* error = NULL;
+    
 
     std::vector<std::array<double,SYSDIM>> path;
     std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.8E3,0};
     path.push_back(z0);
-        
-    stepper(path, landed, error, gravsys);
+    
+    bool sol = solve_BVP(path);
+     
+    printf("Has solution: %s\n", sol?"true":"false");
+    printf("At thrust: %f\n", thrust);
 
     write_meta();
     write_path(path);
@@ -24,6 +28,74 @@ int main(int argc, char **argv){
 
 	return 0;
 }
+
+int solve_BVP(std::vector<std::array<double,SYSDIM>>& path){
+    double* error = NULL;
+    int max_iter = 50;
+    
+    thrust = TWR_to_thrust(2, BODY.radius+BODY.landing_altitude);
+    double lThrust = TWR_to_thrust(1, BODY.radius+BODY.landing_altitude);
+    double hThrust = TWR_to_thrust(1E3, BODY.radius+BODY.landing_altitude);
+    
+    bool sol = false;
+    for(int i = 0; i< max_iter; i++){   
+        PRINTFLT(thrust);
+        
+        path.resize(1);
+        stepper(path, landed, error, gravsys);
+        if(has_sol(path)){
+            sol = true;
+            break;
+        }else{
+            double height_error = get_error(path);
+            bisect(height_error, &thrust, &hThrust, &lThrust);
+            
+        }   
+    }
+    return sol;
+}
+
+int gravsys(double* r0, double* dr0){
+    double m = 1;
+    double M = BODY.mass;
+    //object position at zero;
+    
+    //unpack
+    const double t = vec_unpack_t(r0);
+    const double_v3 r = vec_unpack_r(r0);
+    const double_v3 v = vec_unpack_v(r0);
+    
+    const double R = r.mag();
+    const double V = v.mag();
+
+    //dunamds
+    
+    double_v3 Ft;
+    if(V > 1){
+        Ft = -thrust*v/V;
+    }else{
+        Ft = thrust*r/R;
+    }
+    
+    double gf = (-G*M*m/(R*R*R));
+    double_v3 Fg = gf*r;
+    
+    double_v3 F = Ft + Fg;
+    
+    double_v3 dr = v;
+    double_v3 dv = F/m;
+    
+    //pack
+    vecpack(dr0, 0, dr, dv);
+    return 0;
+}
+
+int expsys(double* z0, double* dz){
+    dz[1] = -z0[2];
+    dz[2] = z0[1];
+    return 0;    
+}
+
 
 int write_meta(void){
     FILE* fp = fopen("tmp/met.dat", "w");
@@ -57,48 +129,3 @@ int write_path(std::vector<std::array<double,SYSDIM>>& path){
     fclose(fp);
     return 0;
 }
-
-int gravsys(double* r0, double* dr0){
-    double m = 1;
-    double M = BODY.mass;
-    //object position at zero;
-    
-    //unpack
-    const double t = r0[0];
-    const double_v3 r = {r0[1], r0[2], r0[3]};
-    const double_v3 v = {r0[4], r0[5], r0[6]};
-    
-    const double R = r.mag();
-    const double V = v.mag();
-    
-    
-    //dunamds
-    double thrust = 1.815;
-    
-    double_v3 Ft;
-    if(V > 1){
-        Ft = -thrust*v/V;
-    }else{
-        Ft = thrust*r/R;
-    }
-    
-    double gf = (-G*M*m/(R*R*R));
-    double_v3 Fg = gf*r;
-    
-    double_v3 F = Ft + Fg;
-    
-    double_v3 dr = v;
-    double_v3 dv = F/m;
-    
-    //pack
-    vecpack(dr0, 0, dr, dv);
-    return 0;
-}
-
-int expsys(double* z0, double* dz){
-    dz[1] = -z0[2];
-    dz[2] = z0[1];
-    return 0;    
-}
-
-
