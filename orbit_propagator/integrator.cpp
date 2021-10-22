@@ -104,7 +104,7 @@ bool landed(const std::array<double,SYSDIM>& z){
     
     //if our radius is less than the landing height
     if(r.mag() < BODY.radius+BODY.landing_altitude){
-        printf("landing termination\n");
+        // printf("landing termination\n");
         return 0;
     }
     //if we are between the initial height and surface and have a postive velocity
@@ -112,11 +112,11 @@ bool landed(const std::array<double,SYSDIM>& z){
     if((r.mag() > BODY.radius+BODY.landing_altitude) 
     and (r.mag() < r0.mag()) 
     and (v.r(r) > 0)){
-        printf("re-orbit termination\n");
+        // printf("re-orbit termination\n");
         return 0;
     }
     if(r.mag() > R_LIMIT*BODY.radius){
-        printf("height termination\n");
+        // printf("height termination\n");
         return 0;
     }
     if(t - zi[0] > T_LIMIT){

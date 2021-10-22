@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from math import *
 import csv
 
@@ -34,9 +35,26 @@ with open('tmp/vis.dat', newline='') as csvfile:
         vy.append(float(row[5]))
         vz.append(float(row[6]))
 
-r = [sqrt(x*x+y*y) for x,y in zip(x,y)]
-vr = [(x*vx + y*vy)/sqrt(x*x+y*y) for x,y,vx,vy in zip(x,y,vx,vy)]
-ph = [atan2(x,y) for x,y in zip(x,y)]
+q = list(zip(x,y,z))
+dq = list(zip(vx,vy,vz))
+
+r = [np.linalg.norm(p) for p in q]
+vr = [np.dot(p,dp)/np.linalg.norm(p) for p,dp in zip(q,dq)]
+
+vvr = np.subtract( dq[0] , np.multiply(q[0],np.dot(q[0],dq[0])/np.dot(q[0],q[0])))
+
+
+normal_vec = np.cross(q[0],vvr)
+
+e1 = q[0]/np.linalg.norm(q[0])
+e2 = vvr/np.linalg.norm(vvr)
+e3 = normal_vec/np.linalg.norm(normal_vec)
+
+norm_basis = np.array([e1,e2,e3])
+
+q_nb = [np.matmul(norm_basis, p) for p in q]
+
+MA = [atan2(y,x) for x,y,z in q_nb]
 
 
 fig = plt.figure(figsize=(10,8)) 
@@ -47,8 +65,8 @@ ax4 = fig.add_subplot(2, 2, 4)
 
 # fs = [f - state.vfs*t for f,t in zip(path[:,1],path[:,4])]
 
-ax.plot(ph,r)
-ax.set_xlabel('Surface Azumith $\phi$ (rad)');
+ax.plot(MA,r)
+ax.set_xlabel('Downrange Angle $\phi$ (rad)');
 ax.set_ylabel('Radius $r$ (m)');
 pi2 = [2*pi*x/1000 for x in range(1000)]
 rh = [radius+landing_altitude for x in pi2]

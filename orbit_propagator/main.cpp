@@ -6,17 +6,18 @@
 #include "integrator.h"
 #include "main.h"
 
-double thrust = 1.813;
+double thrust = 0;
 
 int main(int argc, char **argv){
 	printf("Orbits!\n");
     
-    
 
     std::vector<std::array<double,SYSDIM>> path;
-    std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.8E3,0};
+    std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3};
     path.push_back(z0);
     
+    // set_t_stop(100000);
+    // stepper(path, time_stop, NULL, gravsys);
     bool sol = solve_BVP(path);
      
     printf("Has solution: %s\n", sol?"true":"false");
