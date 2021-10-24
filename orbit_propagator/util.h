@@ -36,7 +36,6 @@ struct double_v3{
     
     double_v3& operator/ (const double);
     double operator* (const double_v3&) const;//dot product
-    double_v3& operator% (const double_v3&);//cross product
     double_v3& operator= (const double_v3&);
     bool operator== (const double_v3&);
     
@@ -45,6 +44,9 @@ struct double_v3{
     double r(const double_v3& r) const;
     
 };
+
+//cross product
+double_v3 cross (const double_v3& u, const double_v3& v);
 
 inline double_v3 operator+ (double_v3 u, const double_v3& v){ 
     u.x += v.x;    

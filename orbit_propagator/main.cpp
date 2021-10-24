@@ -6,7 +6,7 @@
 #include "integrator.h"
 #include "main.h"
 
-double thrust = 0;
+double thrust = 0.01;
 
 int main(int argc, char **argv){
 	printf("Orbits!\n");
@@ -17,12 +17,12 @@ int main(int argc, char **argv){
     std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3};
     path.push_back(z0);
     
-    set_t_stop(100000);
-    stepper(path, time_stop, NULL, gravsys);
-    // bool sol = solve_BVP(path);
+    // set_t_stop(100);
+    // stepper(path, time_stop, NULL, gravsys);
+    bool sol = solve_BVP(path);
      
-    // printf("Has solution: %s\n", sol?"true":"false");
-    // printf("At thrust: %f\n", thrust);
+    printf("Has solution: %s\n", sol?"true":"false");
+    printf("At thrust: %f\n", thrust);
 
     write_meta();
     write_path(path);
@@ -64,7 +64,7 @@ int gravsys(double* r0, double* dr0){
     
     //unpack
     const double_v3 r = vec_unpack_r(r0);
-    const double_v3 vs = ((BODY.w) % r) * ((BODY.landing_altitude+BODY.radius)/(r.mag()));//surface velocity at landing height
+    const double_v3 vs = cross(BODY.w, r);//surface velocity at landing height
     
     const double t = vec_unpack_t(r0);
     const double_v3 v = (vec_unpack_v(r0) - vs);//relative surface velocity
@@ -80,6 +80,8 @@ int gravsys(double* r0, double* dr0){
     }else{
         Ft = thrust*r/R;
     }
+
+    
     
     double gf = (-G*M*m/(R*R*R));
     double_v3 Fg = gf*r;

@@ -58,12 +58,12 @@ double double_v3::operator* (const double_v3& r) const{
     return inner;
 }
 
-//cross product
-double_v3& double_v3::operator% (const double_v3& r){ 
-    x = y*r.z - z*r.y;    
-    y = z*r.x - x*r.z;    
-    z = x*r.y - y*r.x;
-    return *this;
+double_v3 cross (const double_v3& u, const double_v3& v){ 
+    double_v3 w;
+    w.x = u.y*v.z - u.z*v.y;    
+    w.y = u.z*v.x - u.x*v.z;    
+    w.z = u.x*v.y - u.y*v.x;
+    return w;
 }
 
 double_v3& double_v3::operator/ (const double a){ 

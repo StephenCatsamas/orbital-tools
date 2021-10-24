@@ -22,6 +22,9 @@ with open('tmp/met.dat', newline='') as csvfile:
            radius = float(row[2])
            landing_altitude = float(row[3])
            rotational_period = float(row[4])
+           wx = float(row[5])
+           wy = float(row[6])
+           wz = float(row[7])
 
 
 with open('tmp/vis.dat', newline='') as csvfile:
@@ -83,12 +86,16 @@ ax3.set_xlabel('Time $t$ (s)');
 ax3.set_ylabel('Radius $r$ (m)');
 ax3.axhline(radius+landing_altitude, color='r')
 
-# vsrfs = [sqrt(vr*vr + (r*vf - state.rs* state.vfs)*(r*vf - state.rs* state.vfs)) for r,vr,vf in zip(path[:,0],path[:,2],path[:,3])]
 
-# ax4.plot(path[:,0],vsrfs)
+
+surf_vel= [(-wz*p[1],wz*p[0],0) for p in q]
+
+rel_surfvel = [np.linalg.norm(np.subtract(dp, vs)) for dp,vs in zip(dq,surf_vel)]
+
+ax4.plot(r,rel_surfvel)
 ax4.set_xlabel('Radius $r$ (m)');
 ax4.set_ylabel('Surface Velocity $v_s$ (m/s)');
-# ax4.axvline(state.rs, color='r')
+ax4.axvline(radius+landing_altitude, color='r')
 ax4.axhline(0, color='r')
 ax4.invert_xaxis()
 plt.show() 
