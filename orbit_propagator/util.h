@@ -45,6 +45,9 @@ struct double_v3{
     
 };
 
+//cross product
+double_v3 cross (const double_v3& u, const double_v3& v);
+
 inline double_v3 operator+ (double_v3 u, const double_v3& v){ 
     u.x += v.x;    
     u.y += v.y;    
@@ -74,6 +77,9 @@ struct body{
     double radius; //m
     double landing_altitude; //m
     double rotational_period;  //s
+    double_v3 w;
+    
+    void init2(void);//quite dodge
 };
 
 extern body earth;

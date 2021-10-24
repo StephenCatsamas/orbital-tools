@@ -6,17 +6,18 @@
 #include "integrator.h"
 #include "main.h"
 
-double thrust = 0;
+double thrust = 0.01;
 
 int main(int argc, char **argv){
 	printf("Orbits!\n");
+    BODY.init2();
     
 
     std::vector<std::array<double,SYSDIM>> path;
     std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3};
     path.push_back(z0);
     
-    // set_t_stop(100000);
+    // set_t_stop(100);
     // stepper(path, time_stop, NULL, gravsys);
     bool sol = solve_BVP(path);
      
@@ -62,28 +63,32 @@ int gravsys(double* r0, double* dr0){
     //object position at zero;
     
     //unpack
-    const double t = vec_unpack_t(r0);
     const double_v3 r = vec_unpack_r(r0);
-    const double_v3 v = vec_unpack_v(r0);
+    const double_v3 vs = cross(BODY.w, r);//surface velocity at landing height
+    
+    const double t = vec_unpack_t(r0);
+    const double_v3 v = (vec_unpack_v(r0) - vs);//relative surface velocity
     
     const double R = r.mag();
     const double V = v.mag();
 
     //dunamds
-    
+ 
     double_v3 Ft;
     if(V > 1){
         Ft = -thrust*v/V;
     }else{
         Ft = thrust*r/R;
     }
+
+    
     
     double gf = (-G*M*m/(R*R*R));
     double_v3 Fg = gf*r;
     
     double_v3 F = Ft + Fg;
     
-    double_v3 dr = v;
+    double_v3 dr = v + vs;//proper motion
     double_v3 dv = F/m;
     
     //pack
@@ -101,13 +106,16 @@ int expsys(double* z0, double* dz){
 int write_meta(void){
     FILE* fp = fopen("tmp/met.dat", "w");
 
-    fprintf(fp, "BODY, mass, radius, landing_altitude, rotational_period\n");
-    fprintf(fp, "%s, %f, %f, %f, %f\n", 
+    fprintf(fp, "BODY, mass, radius, landing_altitude, rotational_period, ω_x, ω_y, ω_z\n");
+    fprintf(fp, "%s, %e, %e, %e, %e, %e, %e, %e\n", 
                 (NAME(BODY)), 
                 BODY.mass, 
                 BODY.radius, 
                 BODY.landing_altitude, 
-                BODY.rotational_period);
+                BODY.rotational_period,
+                BODY.w.x,
+                BODY.w.y,
+                BODY.w.z);
 
     fclose(fp);
 
@@ -119,13 +127,13 @@ int write_path(std::vector<std::array<double,SYSDIM>>& path){
     FILE* fp = fopen("tmp/vis.dat", "w");
     for(long long unsigned int i = 0; i < path.size(); i++){
     for(int j = 0; j < SYSDIM; j++){
-        fprintf(fp, "%f,", path[i][j]);
+        fprintf(fp, "%e,", path[i][j]);
     }
         fprintf(fp, "\n");
     }
 #else
     FILE* fp = fopen("NUL", "w");
-    fprintf(fp, "%f,", path[0][0]);
+    fprintf(fp, "%e,", path[0][0]);
 #endif
     fclose(fp);
     return 0;

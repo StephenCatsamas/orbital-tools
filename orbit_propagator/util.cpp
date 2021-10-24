@@ -58,6 +58,14 @@ double double_v3::operator* (const double_v3& r) const{
     return inner;
 }
 
+double_v3 cross (const double_v3& u, const double_v3& v){ 
+    double_v3 w;
+    w.x = u.y*v.z - u.z*v.y;    
+    w.y = u.z*v.x - u.x*v.z;    
+    w.z = u.x*v.y - u.y*v.x;
+    return w;
+}
+
 double_v3& double_v3::operator/ (const double a){ 
     x /= a;    
     y /= a;    
@@ -121,5 +129,12 @@ double TWR_to_thrust(double TWR, double R){
     return thrust;
 }
 
+void body::init2(){
+    w.x = 0;
+    w.y = 0;
+    w.z = 2*M_PI/rotational_period;   
+}
+
 struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
 struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};
+
