@@ -103,7 +103,7 @@ double double_v3::r(const double_v3& r) const{
     return ip/mag;
 }
 
-int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
+int vecpack(double* a, const double t, const double_v3& b, const double_v3& c, const double m){
     a[0] = t;
     a[1] = b.x;
     a[2] = b.y;
@@ -111,6 +111,7 @@ int vecpack(double* a, const double t, const double_v3& b, const double_v3& c){
     a[4] = c.x;
     a[5] = c.y;
     a[6] = c.z;
+    a[7] = m;
     return 0;
 }
 

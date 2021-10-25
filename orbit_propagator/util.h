@@ -10,7 +10,7 @@
 #define STRINGIFY(var) #var
 #define NAME(var) STRINGIFY(var)
 
-#define SYSDIM 7
+#define SYSDIM 8 //t,x,y,z,dx,dy,dz,m
 #define BODY moon
 
 #define G 6.67E-11
@@ -91,7 +91,7 @@ int veccpy(std::array<double,SYSDIM>& a, double* b);
 int veccpy(double* a, std::array<double,SYSDIM>& b);
 int veccpy(std::array<double,SYSDIM>& a, const std::array<double,SYSDIM>& b);
 
-int vecpack(double* a, const double t, const double_v3& b, const double_v3& c);
+int vecpack(double* a, const double t, const double_v3& b, const double_v3& c, const double m);
 
 template<typename T>
 double vec_unpack_t(const T a){
@@ -108,6 +108,11 @@ template<typename T>
 double_v3 vec_unpack_v(const T a){
     double_v3 v = {a[4], a[5], a[6]};
     return v;
+}
+
+template<typename T>
+double vec_unpack_mass(const T a){
+    return a[7];
 }
 
 template<typename T>

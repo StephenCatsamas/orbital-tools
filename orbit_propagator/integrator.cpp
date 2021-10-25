@@ -251,6 +251,10 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(con
     return 0;
 }
 
+int get_statistics(std::vector<std::array<double,SYSDIM>>& path){
+    return 0;
+}
+
 double new_step_size(double hdyn, double d_norm, double e_norm){
     if(d_norm <= e_norm){
         if(d_norm != 0){

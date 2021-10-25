@@ -14,7 +14,7 @@ int main(int argc, char **argv){
     
 
     std::vector<std::array<double,SYSDIM>> path;
-    std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3};
+    std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3,1};
     path.push_back(z0);
     
     // set_t_stop(100);
@@ -24,6 +24,9 @@ int main(int argc, char **argv){
     printf("Has solution: %s\n", sol?"true":"false");
     printf("At thrust: %f\n", thrust);
 
+    //calulate path statistics
+    get_statistics(path);
+    
     write_meta();
     write_path(path);
     printf("Orbited!\n");
@@ -36,7 +39,7 @@ int solve_BVP(std::vector<std::array<double,SYSDIM>>& path){
     int max_iter = 50;
     
     thrust = TWR_to_thrust(2, BODY.radius+BODY.landing_altitude);
-    double lThrust = TWR_to_thrust(1, BODY.radius+BODY.landing_altitude);
+    double lThrust = TWR_to_thrust(0, BODY.radius+BODY.landing_altitude);
     double hThrust = TWR_to_thrust(1E3, BODY.radius+BODY.landing_altitude);
     
     bool sol = false;
@@ -58,16 +61,19 @@ int solve_BVP(std::vector<std::array<double,SYSDIM>>& path){
 }
 
 int gravsys(double* r0, double* dr0){
-    double m = 1;
     double M = BODY.mass;
     //object position at zero;
-    
+    const double ISP = 320;//s
+    const double g = 9.81;//m/s^2
+    const double m_dry = 0.2;
     //unpack
     const double_v3 r = vec_unpack_r(r0);
     const double_v3 vs = cross(BODY.w, r);//surface velocity at landing height
     
     const double t = vec_unpack_t(r0);
     const double_v3 v = (vec_unpack_v(r0) - vs);//relative surface velocity
+    double m = vec_unpack_mass(r0);
+    
     
     const double R = r.mag();
     const double V = v.mag();
@@ -75,7 +81,9 @@ int gravsys(double* r0, double* dr0){
     //dunamds
  
     double_v3 Ft;
-    if(V > 1){
+    if(m < m_dry){
+        Ft = {0,0,0};
+    }else if(V > 1){
         Ft = -thrust*v/V;
     }else{
         Ft = thrust*r/R;
@@ -91,8 +99,12 @@ int gravsys(double* r0, double* dr0){
     double_v3 dr = v + vs;//proper motion
     double_v3 dv = F/m;
     
+   
+    double dt = 1;//this does nothing as we only need the deriatives of the non-time variables
+    double dm = -abs(thrust)/(ISP*g);
+    
     //pack
-    vecpack(dr0, 0, dr, dv);
+    vecpack(dr0, dt, dr, dv, dm);
     return 0;
 }
 

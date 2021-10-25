@@ -10,6 +10,7 @@ z = []
 vx = []
 vy = []
 vz = []
+m = []
 
 
 
@@ -37,9 +38,15 @@ with open('tmp/vis.dat', newline='') as csvfile:
         vx.append(float(row[4]))
         vy.append(float(row[5]))
         vz.append(float(row[6]))
+        m.append(float(row[7]))
 
 q = list(zip(x,y,z))
 dq = list(zip(vx,vy,vz))
+
+ISP = 320
+g = 9.81
+DELTA_V = ISP*g*log(m[0]/m[-1])
+print("Delta V usage: ", round(DELTA_V,0), " m/s");
 
 r = [np.linalg.norm(p) for p in q]
 vr = [np.dot(p,dp)/np.linalg.norm(p) for p,dp in zip(q,dq)]
@@ -82,8 +89,12 @@ ax2.axhline(0, color='r')
 ax2.invert_xaxis()
 ax2.invert_yaxis()
 ax3.plot(t,r)
+ax3b = ax3.twinx()
+ax3b.plot(t,m, color = 'orange')
 ax3.set_xlabel('Time $t$ (s)');
 ax3.set_ylabel('Radius $r$ (m)');
+ax3b.set_ylabel('Mass $m$ (kg)');
+ax3b.set_ylim([0,m[0]]);
 ax3.axhline(radius+landing_altitude, color='r')
 
 
