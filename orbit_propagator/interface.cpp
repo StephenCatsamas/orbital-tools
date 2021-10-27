@@ -1,10 +1,37 @@
+#include <math.h>
+#include <stdio.h>
+#include <vector>
 #include "interface.h"
 
 //we use the apoasis here as it is more likely to be visible when suborbital
-std::array<double, SYSDIM> orbit_to_position(double apoapsis, double sea_altitude, double inclination, bool accending){
+std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, double sea_altitude, double inclination, bool accending){
+    apoapsis += BODY.radius;
+    periapsis += BODY.radius;
+    
+    double mu = G*BODY.mass;//graviational parameter
+    double E = -mu/(apoapsis + periapsis);//specific orbital energy
+    double Lsq = 2*mu*(apoapsis*periapsis)/(apoapsis + periapsis);//specific angular momenum squared
+    
+    double r_height = sea_altitude+BODY.radius;
+    double vsq = 2*(E + mu/(r_height));
+    double v_mag = sqrt(vsq);
+    
+    double sinsq = Lsq/(r_height*r_height*vsq);//sqaured sin of angle between radius and velocity
+    double cossq = 1-sinsq;
+    double sin = sqrt(sinsq);
+    double cos = sqrt(cossq);
+    //TODO implement inclination
+    
+    if(accending){cos = cos; PRINTFLT(cos);}
+    else{cos = -1*cos;PRINTFLT(cos);}
     
     
-    
+    double t = 0;
+    double_v3 r = {r_height,0,0};
+    double_v3 v = {v_mag*cos,v_mag*sin,0};
+    double mass = 0;
+    std::array<double, SYSDIM> loc = {t, r.x,r.y,r.z,v.x,v.y,v.z,mass};
+    return loc;
 }
 
 

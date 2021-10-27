@@ -43,10 +43,13 @@ with open('tmp/vis.dat', newline='') as csvfile:
 q = list(zip(x,y,z))
 dq = list(zip(vx,vy,vz))
 
-ISP = 320
+ISP = 800
 g = 9.81
-DELTA_V = ISP*g*log(m[0]/m[-1])
-print("Delta V usage: ", round(DELTA_V,0), " m/s");
+try:
+    DELTA_V = ISP*g*log(m[0]/m[-1])
+    print("Delta V usage: ", round(DELTA_V,0), " m/s")
+except ValueError:
+    print("ERROR: Cannot calulate Delta V")
 
 r = [np.linalg.norm(p) for p in q]
 vr = [np.dot(p,dp)/np.linalg.norm(p) for p,dp in zip(q,dq)]

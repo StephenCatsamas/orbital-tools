@@ -22,7 +22,8 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
             r_min = rr;
             deltH = r.mag() - r_tgt;
         }
-    }       
+    }
+    PRINTFLT(deltH);
     return deltH;
 }
 
@@ -96,7 +97,7 @@ bool has_sol(const std::vector<std::array<double,SYSDIM>>& path){
     return 0;
 }
 
-
+//TODO add out of fuel exception
 bool landed(const std::array<double,SYSDIM>& z){
     double t = z[0];
     double_v3 r = {z[1],z[2],z[3]};
@@ -112,11 +113,11 @@ bool landed(const std::array<double,SYSDIM>& z){
     if((r.mag() > BODY.radius+BODY.landing_altitude) 
     and (r.mag() < r0.mag()) 
     and (v.r(r) > 0)){
-        // printf("re-orbit termination\n");
+        printf("re-orbit termination\n");
         return 0;
     }
     if(r.mag() > R_LIMIT*BODY.radius){
-        // printf("height termination\n");
+        printf("height termination\n");
         return 0;
     }
     if(t - zi[0] > T_LIMIT){

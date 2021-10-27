@@ -15,7 +15,10 @@ int main(int argc, char **argv){
     
 
     std::vector<std::array<double,SYSDIM>> path;
-    std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3,1};
+    // std::array<double, SYSDIM> z0 = {0,2E6,0,0,0,1.4E3,-1.4E3,1};
+    std::array<double, SYSDIM> z0 = orbit_to_position(10E6, 9E6, 9.5E6, 0, false);
+    PRINTFLT(z0[4]);
+    z0[7] = 1;
     path.push_back(z0);
     
     // set_t_stop(100);
@@ -64,9 +67,9 @@ int solve_BVP(std::vector<std::array<double,SYSDIM>>& path){
 int gravsys(double* r0, double* dr0){
     double M = BODY.mass;
     //object position at zero;
-    const double ISP = 320;//s
+    const double ISP = 800;//s
     const double g = 9.81;//m/s^2
-    const double m_dry = 0.2;
+    const double m_dry = 0.0001;
     //unpack
     const double_v3 r = vec_unpack_r(r0);
     const double_v3 vs = cross(BODY.w, r);//surface velocity at landing height
