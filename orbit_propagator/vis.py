@@ -11,10 +11,12 @@ vx = []
 vy = []
 vz = []
 m = []
+Ftx = []
+Fty = []
+Ftz = []
 
 
-
-with open('tmp/met.dat', newline='') as csvfile:
+with open('tmp/meta.dat', newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter=',', quotechar='|')
     for i,row in enumerate(reader):
         if i == 1:
@@ -26,9 +28,15 @@ with open('tmp/met.dat', newline='') as csvfile:
            wx = float(row[5])
            wy = float(row[6])
            wz = float(row[7])
+        if i == 3:
+           craft_name = row[0]
+           mass_wet = float(row[1])
+           mass_dry = float(row[2])
+           thrust = float(row[3])
+           ISP = float(row[4])
 
 
-with open('tmp/vis.dat', newline='') as csvfile:
+with open('tmp/path.dat', newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter=',', quotechar='|')
     for row in reader:
         t.append(float(row[0]))
@@ -39,14 +47,22 @@ with open('tmp/vis.dat', newline='') as csvfile:
         vy.append(float(row[5]))
         vz.append(float(row[6]))
         m.append(float(row[7]))
+        Ftx.append(float(row[8]))
+        Fty.append(float(row[9]))
+        Ftz.append(float(row[10]))
 
+Ft = list(zip(Ftx,Fty,Ftz))
 q = list(zip(x,y,z))
 dq = list(zip(vx,vy,vz))
 
-ISP = 320
-g = 9.81
-DELTA_V = ISP*g*log(m[0]/m[-1])
-print("Delta V usage: ", round(DELTA_V,0), " m/s");
+try:
+    Dt = [j-i for i, j in zip(t[:-1], t[1:])]
+    Dt.insert(0,0)
+    Delta_V = sum((np.linalg.norm(Ftt)*dt)/mc for Ftt, dt, mc in zip(Ft,Dt, m))
+    print("Delta V usage: ", round(Delta_V,0), " m/s")
+except ValueError:
+    print("ERROR: Cannot calulate Delta V")
+
 
 r = [np.linalg.norm(p) for p in q]
 vr = [np.dot(p,dp)/np.linalg.norm(p) for p,dp in zip(q,dq)]

@@ -3,34 +3,6 @@
 
 
 
-int veccpy(double* a, double* b){
-    for(int i = 0; i < SYSDIM; i++){
-        a[i] = b[i];
-    }
-    return 0;
-}
-
-int veccpy(std::array<double,SYSDIM>& a, double* b){
-    for(int i = 0; i < SYSDIM; i++){
-        a[i] = b[i];
-    }
-    return 0;
-}
-
-int veccpy(double* a, std::array<double,SYSDIM>& b){
-    for(int i = 0; i < SYSDIM; i++){
-        a[i] = b[i];
-    }
-    return 0;
-}
-
-int veccpy(std::array<double,SYSDIM>& a, const std::array<double,SYSDIM>& b){
-    for(int i = 0; i < SYSDIM; i++){
-        a[i] = b[i];
-    }
-    return 0;
-}
-
 
 quat& quat::operator+ (const quat& q){
     r += q.r;    
@@ -103,7 +75,7 @@ double double_v3::r(const double_v3& r) const{
     return ip/mag;
 }
 
-int vecpack(double* a, const double t, const double_v3& b, const double_v3& c, const double m){
+int vecpack(std::array<double,SYSDIM>& a, const double t, const double_v3& b, const double_v3& c, const double m){
     a[0] = t;
     a[1] = b.x;
     a[2] = b.y;
@@ -112,6 +84,13 @@ int vecpack(double* a, const double t, const double_v3& b, const double_v3& c, c
     a[5] = c.y;
     a[6] = c.z;
     a[7] = m;
+    return 0;
+}
+
+int vecpack(std::array<double,AUXDIM>& a, const double_v3& b){
+    a[0] = b.x;
+    a[1] = b.y;
+    a[2] = b.z;
     return 0;
 }
 
@@ -138,4 +117,6 @@ void body::init2(){
 
 struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
 struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};
+
+struct craft rocket = {1000, 200, 10000, 360};
 

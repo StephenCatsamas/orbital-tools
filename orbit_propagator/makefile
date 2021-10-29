@@ -1,4 +1,4 @@
-SRC = main.cpp util.cpp integrator.cpp
+SRC = main.cpp util.cpp integrator.cpp interface.cpp
 INC = main.h util.h integrator.h 
 CFLAGS = -Wall -O2 -ftree-vectorize
 OBJ = orbits.exe
