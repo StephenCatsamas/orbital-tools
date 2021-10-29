@@ -3,6 +3,40 @@
 
 
 
+int rotate(double_v3& r,const double_v3& u, const double angle){
+    double_v3 uv = u.unit();
+    double half_sin = sin(angle*0.5);
+    double half_cos = cos(angle*0.5);
+    quat qr = {0, r.x,r.y,r.z}; 
+    quat qu = {half_cos, half_sin*uv.x,half_sin*uv.y,half_sin*uv.z}; 
+    quat qui = qu.conj();//since qu is unitary
+    qr = qu*qr*qui;
+    
+    //store results
+    r.x = qr.i;
+    r.y = qr.j;
+    r.z = qr.k;
+}
+
+quat quat::inv(void) const{
+    quat inv = *this;
+    inv = inv.conj()/inf.mag();
+    return inv;
+}
+
+quat quat::conj(void) const{
+    quat conj = *this;
+    conj.i *= -1;
+    conj.j *= -1;
+    conj.k *= -1;
+    return conj;
+}
+
+double quat::mag(void) const{
+    quat q = *this;
+    double mag = sqrt(q.r*q.r + q.i*q.i + q.j*q.j + q.k*q.k);
+    return mag;
+}
 
 quat& quat::operator+ (const quat& q){
     r += q.r;    

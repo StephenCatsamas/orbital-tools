@@ -23,6 +23,8 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     double mu = G*BODY.mass;//graviational parameter
     double E = -mu/(apoapsis + periapsis);//specific orbital energy
     double Lsq = 2*mu*(apoapsis*periapsis)/(apoapsis + periapsis);//specific angular momenum squared
+    double esqm1 = 2*E*Lsq/(mu*mu);//square eccentricity minus 1
+    double e = sqrt(esqm1 + 1);
     
     double r_height = sea_altitude+BODY.radius;
     double vsq = 2*(E + mu/(r_height));
@@ -32,7 +34,11 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     double cossq = 1-sinsq;
     double sin = sqrt(sinsq);
     double cos = sqrt(cossq);
-    //TODO implement inclination
+    //inclination
+    double sin_slr = - ((((apoapsis + periapsis)*0.5*esqm1)/r_height) -1)/e
+    double cos_slr = sqrt(1 - sin_slr*sin_slr);
+    double sin_inc = sin(inclination);
+    double cos_inc = cos(inclination);
     
     if(accending){cos = cos;}
     else{cos = -1*cos;}
@@ -41,6 +47,9 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     double t = 0;
     double_v3 r = {r_height,0,0};
     double_v3 v = {v_mag*cos,v_mag*sin,0};
+    
+    rotate(r,u,angle);
+    
     double mass = 0;
     std::array<double, SYSDIM> loc = {t, r.x,r.y,r.z,v.x,v.y,v.z,mass};
     return loc;
