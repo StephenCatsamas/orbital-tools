@@ -14,7 +14,7 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
     double deltH;
     double r_tgt = 0.5*(e_r[0] + e_r[1]); //target height
     double r_min = std::numeric_limits<double>::max();
-    for(int i = 0; i < path.size(); i++){
+    for(size_t i = 0; i < path.size(); i++){
         const double_v3 r = vec_unpack_r(path[i]);
         
         double rr = r.mag();
@@ -23,7 +23,6 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
             deltH = r.mag() - r_tgt;
         }
     }
-    PRINTFLT(deltH);
     return deltH;
 }
 
@@ -60,7 +59,7 @@ bool intersect(double* l1a, double* l1b, double* l2a, double* l2b){
 bool has_sol(const std::vector<std::array<double,SYSDIM>>& path){
     const int boxlist[] = {0,1,1,0};
     if(path.size() == 0){return false;}
-    for(long long unsigned int i = path.size() - 1; i > 0; i--){
+    for(size_t i = path.size() - 1; i > 0; i--){
         const double_v3 r = vec_unpack_r(path[i]);
         const double_v3 vs = cross(BODY.w,r);//surface velocity 
         const double_v3 v = (vec_unpack_v(path[i]) - vs);//relative surface velocity
@@ -110,14 +109,14 @@ bool landed(const std::array<double,SYSDIM>& z){
     }
     //if we are between the initial height and surface and have a postive velocity
     double_v3 r0 = {zi[1],zi[2],zi[3]};
-    if((r.mag() > BODY.radius+BODY.landing_altitude) 
-    and (r.mag() < r0.mag()) 
-    and (v.r(r) > 0)){
-        printf("re-orbit termination\n");
+    if((r.mag() > BODY.radius+BODY.landing_altitude)//greater than surface height 
+    and (r.mag() < r0.mag()) //less than initial height
+    and (v.r(r)/v.mag() > 0.1) ){ //going up at a steep angle
+        // printf("re-orbit termination\n");
         return 0;
     }
     if(r.mag() > R_LIMIT*BODY.radius){
-        printf("height termination\n");
+        // printf("height termination\n");
         return 0;
     }
     if(t - zi[0] > T_LIMIT){
@@ -128,12 +127,12 @@ bool landed(const std::array<double,SYSDIM>& z){
     return 1;
 }
 
-int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
+int rK4(std::array<double,SYSDIM>& z0, std::array<double,SYSDIM>& z, double h, int (*system)(std::array<double,SYSDIM>&, std::array<double,SYSDIM>&, std::array<double,AUXDIM>&), std::array<double,AUXDIM>& auxz){
     veccpy(z, z0);
    
     //k1
-    double k1[SYSDIM]; 
-    system(z,k1);
+    std::array<double,SYSDIM> k1; 
+    system(z,k1,auxz);
     
     for(int i = 1; i < SYSDIM; i++){
         k1[i] *= h;
@@ -147,8 +146,8 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
     }
    
     //k2
-    double k2[SYSDIM]; 
-    system(z, k2);
+    std::array<double,SYSDIM> k2; 
+    system(z, k2,auxz);
     for(int i = 1; i < SYSDIM; i++){
         k2[i] *= h;
     }
@@ -160,8 +159,8 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
         z[i] = z0[i] + 0.5*k2[i];
     }
     //k3
-    double k3[SYSDIM];  
-    system(z, k3);
+    std::array<double,SYSDIM> k3;  
+    system(z, k3,auxz);
     for(int i = 1; i < SYSDIM; i++){
         k3[i] *= h;
     }
@@ -174,8 +173,8 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
     }
     
     //k4
-    double k4[SYSDIM]; 
-    system(z, k4);
+    std::array<double,SYSDIM> k4; 
+    system(z, k4,auxz);
     for(int i = 1; i < SYSDIM; i++){
         k4[i] *= h;
     }
@@ -191,18 +190,19 @@ int rK4(double* z0, double* z, double h, int (*system)(double*, double*)){
 }
 
 
-int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(const std::array<double,SYSDIM>&), double* error, int (*system)(double*, double*)){
+int stepper(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path, bool (*check_stop)(const std::array<double,SYSDIM>&), double* error, int (*system)(std::array<double,SYSDIM>&, std::array<double,SYSDIM>&, std::array<double,AUXDIM>&)){
 
     static double hdyn = 0.1;
     
     std::array<double,SYSDIM> zc;
     std::array<double,SYSDIM> z0;
 
-    double loc_sf[SYSDIM];
-    double loc_h1[SYSDIM];
-    double loc_h2[SYSDIM];
-    double delta[SYSDIM];
-    double ztmp[SYSDIM];
+    std::array<double,SYSDIM> loc_sf;
+    std::array<double,SYSDIM> loc_h1;
+    std::array<double,SYSDIM> loc_h2;
+    std::array<double,SYSDIM> delta;
+    std::array<double,SYSDIM> ztmp;
+    std::array<double,AUXDIM> auxz;
 
     veccpy(z0, path.back());
     veccpy(zi, path.back());//save initial state in global variable
@@ -212,9 +212,9 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(con
         bool got_accuracy = false;
         while(not got_accuracy){
             veccpy(ztmp,path.back());
-            rK4(ztmp, loc_sf, 2*hdyn, system);
-            rK4(ztmp, loc_h1, hdyn, system);
-            rK4(loc_h1, loc_h2, hdyn, system);
+            rK4(ztmp, loc_sf, 2*hdyn, system, auxz);
+            rK4(ztmp, loc_h1, hdyn, system, auxz);
+            rK4(loc_h1, loc_h2, hdyn, system, auxz);
             
             for(int i = 1; i < SYSDIM; i++){
                 delta[i] = loc_sf[i] - loc_h2[i];
@@ -238,13 +238,15 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(con
             // rK4(ztmp, loc_h2, hdyn, system);
         // }
         
-        veccpy(zc, loc_h2);//converts to std::array
+        veccpy(zc, loc_h2);//copy redundant
 #ifdef _DEBUG
         if(path.size() > 5E4){
         path.resize(1);
+        aux_path.resize(1);
         }
 #endif
         path.push_back(zc);
+        aux_path.push_back(auxz);
     }
 
 
@@ -252,7 +254,7 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, bool (*check_stop)(con
     return 0;
 }
 
-int get_statistics(std::vector<std::array<double,SYSDIM>>& path){
+int get_statistics(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
     return 0;
 }
 
@@ -287,6 +289,9 @@ double Q_qqrt(double n){
 
 //quick inverse square root
 float Q_rsqrt(float number){
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic ignored "-Wuninitialized"
 	long i;
 	float x2, y;
 	const float threehalfs = 1.5F;
@@ -299,4 +304,6 @@ float Q_rsqrt(float number){
 	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
 
 	return y;
+#pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 }

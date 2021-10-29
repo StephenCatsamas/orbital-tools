@@ -10,7 +10,8 @@
 #define STRINGIFY(var) #var
 #define NAME(var) STRINGIFY(var)
 
-#define SYSDIM 8 //t,x,y,z,dx,dy,dz,m
+#define SYSDIM 8 //t,x,y,z,dx,dy,dz,m,
+#define AUXDIM 3 //Ftx,Fty,Ftz
 #define BODY moon
 
 #define G 6.67E-11
@@ -85,13 +86,27 @@ struct body{
 extern body earth;
 extern body moon;
 
+struct craft{
+    double mass_wet;//kg
+    double mass_dry; //kg
+    double thrust; //kN
+    double ISP;  //s
 
-int veccpy(double* a, double* b);
-int veccpy(std::array<double,SYSDIM>& a, double* b);
-int veccpy(double* a, std::array<double,SYSDIM>& b);
-int veccpy(std::array<double,SYSDIM>& a, const std::array<double,SYSDIM>& b);
+};
 
-int vecpack(double* a, const double t, const double_v3& b, const double_v3& c, const double m);
+extern craft rocket;
+
+
+template<typename T>
+int veccpy(T& a, T& b){
+    for(size_t i = 0; i < a.size(); i++){
+        a[i] = b[i];
+    }
+    return 0;
+}
+
+int vecpack(std::array<double,SYSDIM>& a, const double t, const double_v3& b, const double_v3& c, const double m);
+int vecpack(std::array<double,AUXDIM>& a, const double_v3& b);
 
 template<typename T>
 double vec_unpack_t(const T a){
