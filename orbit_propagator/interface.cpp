@@ -21,40 +21,81 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     periapsis += BODY.radius;
     
     double mu = G*BODY.mass;//graviational parameter
-    double E = -mu/(apoapsis + periapsis);//specific orbital energy
-    double Lsq = 2*mu*(apoapsis*periapsis)/(apoapsis + periapsis);//specific angular momenum squared
-    double esqm1 = 2*E*Lsq/(mu*mu);//square eccentricity minus 1
+    double E = get_specific_energy(apoapsis,periapsis,mu);
+    double Lsq = get_sqr_specific_anglular_momentum(apoapsis, periapsis, mu);
+    double esqm1 = get_eccentrity_sqrm1(E, Lsq, mu);//square eccentricity minus 1
     double e = sqrt(esqm1 + 1);
+    double s_maj_a = get_s_maj_a(apoapsis, periapsis);
     
     double r_height = sea_altitude+BODY.radius;
-    double vsq = 2*(E + mu/(r_height));
+    double vsq = 2*get_specific_ke(E,mu,r_height);
     double v_mag = sqrt(vsq);
     
-    double sinsq = Lsq/(r_height*r_height*vsq);//sqaured sin of angle between radius and velocity
+    double sinsq = Lsq/(r_height*r_height*vsq);//squared sin of angle between radius and velocity
     double cossq = 1-sinsq;
     double sin = sqrt(sinsq);
     double cos = sqrt(cossq);
-    //inclination
-    double sin_slr = - ((((apoapsis + periapsis)*0.5*esqm1)/r_height) -1)/e
-    double cos_slr = sqrt(1 - sin_slr*sin_slr);
-    double sin_inc = sin(inclination);
-    double cos_inc = cos(inclination);
     
     if(accending){cos = cos;}
     else{cos = -1*cos;}
     
-    
     double t = 0;
     double_v3 r = {r_height,0,0};
     double_v3 v = {v_mag*cos,v_mag*sin,0};
+
+    //angle to SLR
+    double sin_slr = get_sin_to_slr(Lsq, mu, esqm1, r_height);
+    double slr_angle = asin(sin_slr);
     
-    rotate(r,u,angle);
+    if(accending){slr_angle = slr_angle;}
+    else{slr_angle = -M_PI - slr_angle;}
+    
+
+    
+    
+    
+    double_v3 slr_axis = {0,0,1};
+    double_v3 inc_axis = {1,0,0};
+    
+    rotate(r,slr_axis,slr_angle);
+    rotate(v,slr_axis,slr_angle);
+
+    
+    rotate(r,inc_axis,inclination);
+    rotate(v,inc_axis,inclination);
+
+    
+    //rotate about body axis of rotation
     
     double mass = 0;
     std::array<double, SYSDIM> loc = {t, r.x,r.y,r.z,v.x,v.y,v.z,mass};
     return loc;
 }
 
+double get_s_maj_a(double apoapsis, double periapsis){
+    return (apoapsis + periapsis)*0.5;
+}
+
+double get_sin_to_slr(double Lsq, double mu, double esqm1, double r){
+    double e = sqrt(esqm1 + 1);
+    return - (1/e)*((Lsq)/(r*mu) - 1);
+}
+
+double get_specific_ke(double E, double mu, double r){
+    return (E + mu/(r));
+}
+
+double get_specific_energy(double apoapsis, double periapsis, double mu){
+    return -mu/(apoapsis + periapsis);
+}
+
+double get_sqr_specific_anglular_momentum(double apoapsis, double periapsis, double mu){
+    return 2*mu*(apoapsis*periapsis)/(apoapsis + periapsis);
+}
+
+double get_eccentrity_sqrm1(double E, double Lsq, double mu){
+    return 2*E*Lsq/(mu*mu);
+}
 
 int write_meta(void){
     FILE* fp = fopen("tmp/meta.dat", "w");

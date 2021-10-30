@@ -16,11 +16,12 @@ int rotate(double_v3& r,const double_v3& u, const double angle){
     r.x = qr.i;
     r.y = qr.j;
     r.z = qr.k;
+    return 0;
 }
 
 quat quat::inv(void) const{
     quat inv = *this;
-    inv = inv.conj()/inf.mag();
+    inv = inv.conj()/inv.mag();
     return inv;
 }
 
@@ -36,6 +37,14 @@ double quat::mag(void) const{
     quat q = *this;
     double mag = sqrt(q.r*q.r + q.i*q.i + q.j*q.j + q.k*q.k);
     return mag;
+}
+
+quat& quat::operator/ (const double a){
+    r /= a;    
+    i /= a;    
+    j /= a;    
+    k /= a;
+    return *this;
 }
 
 quat& quat::operator+ (const quat& q){

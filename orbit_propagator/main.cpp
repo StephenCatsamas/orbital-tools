@@ -16,12 +16,11 @@ int main(int argc, char **argv){
 
     std::vector<std::array<double,SYSDIM>> path;
     std::vector<std::array<double,AUXDIM>> aux_path;
-    std::array<double, SYSDIM> z0 = orbit_to_position(50E3, 9E3, 12E3, 0, false);
+    std::array<double, SYSDIM> z0 = orbit_to_position(500E3, 60E3, 120E3, 0.76, false);
     z0[7] = rocket.mass_wet;
     std::array<double, AUXDIM> axz0 = {0,0,0};
     path.push_back(z0);
     aux_path.push_back(axz0);
-    
     // set_t_stop(10000);
     // stepper(path, aux_path, time_stop, NULL, gravsys);
     bool sol = solve_BVP(path, aux_path);

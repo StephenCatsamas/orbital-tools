@@ -17,7 +17,7 @@
 #define G 6.67E-11
 
 
-int rotate(double_v3& r,const double_v3& u, const double angle);
+
 
 struct quat {
     
@@ -28,6 +28,7 @@ struct quat {
     
     quat& operator+ (const quat&);
     quat& operator* (const quat&);
+    quat& operator/ (const double);
     quat inv (void) const;
     quat conj (void) const;
     double mag (void) const;
@@ -49,6 +50,8 @@ struct double_v3{
     double r(const double_v3& r) const;
     
 };
+
+int rotate(double_v3& r,const double_v3& u, const double angle);
 
 //cross product
 double_v3 cross (const double_v3& u, const double_v3& v);
