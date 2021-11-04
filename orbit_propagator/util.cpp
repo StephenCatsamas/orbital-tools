@@ -1,7 +1,11 @@
 #include <math.h>
 #include "util.h"
 
+struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
+struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};
+struct body file = {1,1,1,1};
 
+struct craft rocket = {1000, 200, 10000, 360};
 
 int rotate(double_v3& r,const double_v3& u, const double angle){
     double_v3 uv = u.unit();
@@ -147,7 +151,7 @@ int mod(const int a, const int b){
 }
 
 double TWR_to_thrust(double TWR, double R){
-    double m = 1;
+    double m = rocket.mass_wet;
     double thrust = TWR * (G*BODY.mass*m/(R*R));
     return thrust;
 }
@@ -158,8 +162,5 @@ void body::init2(){
     w.z = 2*M_PI/rotational_period;   
 }
 
-struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
-struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};
 
-struct craft rocket = {1000, 200, 10000, 360};
 

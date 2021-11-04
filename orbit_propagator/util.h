@@ -12,11 +12,9 @@
 
 #define SYSDIM 8 //t,x,y,z,dx,dy,dz,m,
 #define AUXDIM 3 //Ftx,Fty,Ftz
-#define BODY moon
+#define BODY file
 
 #define G 6.67E-11
-
-
 
 
 struct quat {
@@ -92,6 +90,7 @@ struct body{
 
 extern body earth;
 extern body moon;
+extern body file;
 
 struct craft{
     double mass_wet;//kg

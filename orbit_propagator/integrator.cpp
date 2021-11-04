@@ -8,8 +8,15 @@
 #define T_LIMIT 1E6 //maximum time for simulation (s)
 
 
-const double e_vr[] = {-3, 3};
-const double e_r[] = {50+BODY.radius+BODY.landing_altitude, 150+BODY.radius+BODY.landing_altitude};
+double e_vr[] = {-3, 3};
+double e_r[] = {50+BODY.radius+BODY.landing_altitude, 150+BODY.radius+BODY.landing_altitude};
+
+int populate_tolerances(void){
+     e_r[0] = 50+BODY.radius+BODY.landing_altitude;
+     e_r[1] = 50+BODY.radius+BODY.landing_altitude;
+     return 0;
+}
+
 double get_error(const std::vector<std::array<double,SYSDIM>>& path){
     double deltH;
     double r_tgt = 0.5*(e_r[0] + e_r[1]); //target height
@@ -23,6 +30,7 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
             deltH = r.mag() - r_tgt;
         }
     }
+    PRINTFLT(deltH);
     return deltH;
 }
 
@@ -101,10 +109,17 @@ bool landed(const std::array<double,SYSDIM>& z){
     double t = z[0];
     double_v3 r = {z[1],z[2],z[3]};
     double_v3 v = {z[4], z[5], z[6]};
+    double m = z[7];
+    double m_dry = rocket.mass_dry;
+    
+    if(m < m_dry){
+        printf("dry tanks termination\n");
+        return 0;
+    }
     
     //if our radius is less than the landing height
     if(r.mag() < BODY.radius+BODY.landing_altitude){
-        // printf("landing termination\n");
+        printf("landing termination\n");
         return 0;
     }
     //if we are between the initial height and surface and have a postive velocity
@@ -112,11 +127,11 @@ bool landed(const std::array<double,SYSDIM>& z){
     if((r.mag() > BODY.radius+BODY.landing_altitude)//greater than surface height 
     and (r.mag() < r0.mag()) //less than initial height
     and (v.r(r)/v.mag() > 0.1) ){ //going up at a steep angle
-        // printf("re-orbit termination\n");
+        printf("re-orbit termination\n");
         return 0;
     }
     if(r.mag() > R_LIMIT*BODY.radius){
-        // printf("height termination\n");
+        printf("height termination\n");
         return 0;
     }
     if(t - zi[0] > T_LIMIT){

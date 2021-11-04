@@ -4,6 +4,8 @@
 #include <vector>
 #include <array>
 
+int populate_tolerances(void);
+
 bool time_stop(const std::array<double,SYSDIM>& z);
 int set_t_stop(const double t);
 bool landed(const std::array<double,SYSDIM>& z);

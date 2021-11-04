@@ -123,6 +123,66 @@ int write_meta(void){
     return 0;
 }
 
+int load_inputs(craft& rocket, body& planet){
+    FILE* fp = fopen("input.cfg", "r");
+    
+    float mass;
+    float radius;
+    float landing_altitude;
+    float rotational_period;
+    
+    
+    char buff[2048];
+    char buff2[2048];
+    //col defs
+    fgets(buff, 2048, fp);
+    //line defs
+    fgets(buff, 2048, fp);
+    // for(int i =0; i<2048; i++){
+        // putchar(buff[i]);
+    // }
+    sscanf(buff, "%s %e, %e, %e, %e\n", buff2, &mass, &radius, &landing_altitude, &rotational_period);
+    
+    
+    PRINTFLT(mass);
+    PRINTFLT(radius);
+    PRINTFLT(landing_altitude);
+    PRINTFLT(rotational_period);
+    
+    planet.mass = (double)mass;
+    planet.radius = (double)radius;
+    planet.landing_altitude = (double)landing_altitude;
+    planet.rotational_period = (double)rotational_period;
+    
+    float mass_wet;
+    float mass_dry;
+    float thrust;
+    float ISP;
+    
+    fgets(buff, 2048, fp);
+    //line defs
+    fgets(buff, 2048, fp);
+    // for(int i =0; i<2048; i++){
+        // putchar(buff[i]);
+    // }
+    sscanf(buff, "%s %e, %e, %e, %e\n", buff2, &mass_wet, &mass_dry, &thrust, &ISP);
+    
+    printf("\n");
+    PRINTFLT(mass_wet);
+    PRINTFLT(mass_dry);
+    PRINTFLT(thrust);
+    PRINTFLT(ISP);
+    
+    rocket.mass_wet = (double)mass_wet;
+    rocket.mass_dry = (double)mass_dry;
+    rocket.thrust = (double)thrust;
+    rocket.ISP = (double)ISP;
+    
+    fclose(fp);
+    return 0;
+}
+
+
 int write_path(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
 #ifndef _DEBUG
     FILE* fp = fopen("tmp/path.dat", "w");
