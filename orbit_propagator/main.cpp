@@ -96,7 +96,7 @@ int solve_BVP_thrust(std::vector<std::array<double,SYSDIM>>& path, std::vector<s
     return sol;
 }
 
-bool zeroed;
+
 int gravsys(std::array<double,SYSDIM>& r0, std::array<double,SYSDIM>& dr0, std::array<double,AUXDIM>& aux_r0){
     double M = BODY.mass;
     double m_dry = rocket.mass_dry;
@@ -114,17 +114,16 @@ int gravsys(std::array<double,SYSDIM>& r0, std::array<double,SYSDIM>& dr0, std::
     const double R = r.mag();
     const double V = v.mag();
 
-    if( t < 1){zeroed = false;}
+
 
     //dunamds
  
     double_v3 Ft;
     if((m < m_dry) or (t < burn_wait)){
         Ft = {0,0,0};
-    }else if(V > 1 and !zeroed){
+    }else if(V > THRUST_CUT_VEL){
         Ft = -rocket.thrust*v/V;
     }else{
-        zeroed = true;
         // Ft = rocket.thrust*r/R;
         Ft = {0,0,0};
     }

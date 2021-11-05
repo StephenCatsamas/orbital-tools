@@ -16,6 +16,7 @@
 
 #define G 6.67E-11
 
+#define THRUST_CUT_VEL 1
 
 struct quat {
     
