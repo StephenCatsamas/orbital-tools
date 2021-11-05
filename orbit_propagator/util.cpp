@@ -7,6 +7,8 @@ struct body file = {1,1,1,1};
 
 struct craft rocket = {1000, 200, 10000, 360};
 
+struct orbit_param orbit = {100E3, 70E3, 90E3, 0, false};
+
 int rotate(double_v3& r,const double_v3& u, const double angle){
     double_v3 uv = u.unit();
     double half_sin = sin(angle*0.5);

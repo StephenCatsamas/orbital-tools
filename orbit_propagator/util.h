@@ -4,7 +4,8 @@
 #include <array>
 
 #define PRINTFLT(var) printf("%s: %f at %d\n", #var, var, __LINE__)
-#define PRINTINT(var) printf("%s: %d at %d\n ", #var, var, __LINE__)
+#define PRINTINT(var) printf("%s: %d at %d\n", #var, var, __LINE__)
+#define PRINTBOOL(var) printf("%s: ", #var);printf((var ? "true" : "false"), var);printf(" at %d\n", __LINE__)
 #define PRINTDV3(var) printf("%s: (%f,%f,%f) at %d\n ", #var, var.x, var.y, var.z, __LINE__)
 
 #define STRINGIFY(var) #var
@@ -102,6 +103,16 @@ struct craft{
 };
 
 extern craft rocket;
+
+struct orbit_param{
+    double apoapsis;            
+    double periapsis;           
+    double sea_altitude;        
+    double inclination;        
+    bool ascending;        
+};
+
+extern orbit_param orbit;
 
 
 template<typename T>

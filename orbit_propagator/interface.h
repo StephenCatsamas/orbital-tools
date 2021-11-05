@@ -3,9 +3,11 @@
 
 #include "util.h"
 
-std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, double sea_altitude, double inclination, bool accending);
+std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, double sea_altitude, double inclination, bool ascending);
 
-int load_inputs(craft& rocket, body& planet);
+int print_inputs(craft& rocket, body& planet, orbit_param& orbit);
+
+int load_inputs(craft& rocket, body& planet, orbit_param& orbit);
 int write_path(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path);
 int write_meta(void);
 

@@ -13,14 +13,18 @@ double thrust = 1;
 int main(int argc, char **argv){
 	printf("Orbits!\n");
     
-    load_inputs(rocket, BODY);
+    load_inputs(rocket, BODY, orbit);
    
     BODY.init2();
     populate_tolerances(); 
 
     std::vector<std::array<double,SYSDIM>> path;
     std::vector<std::array<double,AUXDIM>> aux_path;
-    std::array<double, SYSDIM> z0 = orbit_to_position(30E3, -5E3, 29E3, 0, false);
+    std::array<double, SYSDIM> z0 = orbit_to_position(orbit.apoapsis,
+                                                    orbit.periapsis,
+                                                    orbit.sea_altitude,
+                                                    orbit.inclination,
+                                                    orbit.ascending);
     z0[7] = rocket.mass_wet;
     std::array<double, AUXDIM> axz0 = {0,0,0};
     path.push_back(z0);

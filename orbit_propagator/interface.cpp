@@ -1,10 +1,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <vector>
+#include <cstring>
 #include "interface.h"
 
 //we use the apoasis here as it is more likely to be visible when suborbital
-std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, double sea_altitude, double inclination, bool accending){
+std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, double sea_altitude, double inclination, bool ascending){
     //make apoapsis periapsis well ordered;
     if(not ordered(periapsis,apoapsis)){
         double t = apoapsis;
@@ -36,7 +37,7 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     double sin = sqrt(sinsq);
     double cos = sqrt(cossq);
     
-    if(accending){cos = cos;}
+    if(ascending){cos = cos;}
     else{cos = -1*cos;}
     
     double t = 0;
@@ -47,7 +48,7 @@ std::array<double, SYSDIM> orbit_to_position(double apoapsis, double periapsis, 
     double sin_slr = get_sin_to_slr(Lsq, mu, esqm1, r_height);
     double slr_angle = asin(sin_slr);
     
-    if(accending){slr_angle = slr_angle;}
+    if(ascending){slr_angle = slr_angle;}
     else{slr_angle = -M_PI - slr_angle;}
     
 
@@ -123,65 +124,143 @@ int write_meta(void){
     return 0;
 }
 
-int load_inputs(craft& rocket, body& planet){
+int load_inputs(craft& rocket, body& planet, orbit_param& orbit){
     FILE* fp = fopen("input.cfg", "r");
+    
+#define BUF_S 2048
+    char buff[BUF_S];
+    char field_buff[BUF_S];
     
     float mass;
     float radius;
     float landing_altitude;
     float rotational_period;
     
+    //line 1
+    fgets(buff, BUF_S, fp);
     
-    char buff[2048];
-    char buff2[2048];
-    //col defs
-    fgets(buff, 2048, fp);
-    //line defs
-    fgets(buff, 2048, fp);
-    // for(int i =0; i<2048; i++){
-        // putchar(buff[i]);
-    // }
-    sscanf(buff, "%s %e, %e, %e, %e\n", buff2, &mass, &radius, &landing_altitude, &rotational_period);
+    //line 2
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &mass);
     
+    //line 3
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &radius);
     
-    PRINTFLT(mass);
-    PRINTFLT(radius);
-    PRINTFLT(landing_altitude);
-    PRINTFLT(rotational_period);
+    //line 4
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &landing_altitude);
+    
+    //line 5
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &rotational_period);
     
     planet.mass = (double)mass;
     planet.radius = (double)radius;
     planet.landing_altitude = (double)landing_altitude;
     planet.rotational_period = (double)rotational_period;
     
+    //line 6
+    fgets(buff, BUF_S, fp);
+    
     float mass_wet;
     float mass_dry;
     float thrust;
     float ISP;
     
-    fgets(buff, 2048, fp);
-    //line defs
-    fgets(buff, 2048, fp);
-    // for(int i =0; i<2048; i++){
-        // putchar(buff[i]);
-    // }
-    sscanf(buff, "%s %e, %e, %e, %e\n", buff2, &mass_wet, &mass_dry, &thrust, &ISP);
+    //line 7
+    fgets(buff, BUF_S, fp);
     
-    printf("\n");
-    PRINTFLT(mass_wet);
-    PRINTFLT(mass_dry);
-    PRINTFLT(thrust);
-    PRINTFLT(ISP);
+    //line 8
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &mass_wet);
     
+    //line 9
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &mass_dry);
+    
+    //line 10
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &thrust);
+    
+    //line 11
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &ISP);
+   
     rocket.mass_wet = (double)mass_wet;
     rocket.mass_dry = (double)mass_dry;
     rocket.thrust = (double)thrust;
     rocket.ISP = (double)ISP;
     
+    //line 12
+    fgets(buff, BUF_S, fp);
+    
+    float apoapsis;
+    float periapsis;
+    float sea_altitude;
+    float inclination;
+    char ascending[256];
+    
+    //line 13
+    fgets(buff, BUF_S, fp);
+    
+    //line 14
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &apoapsis);
+    
+    //line 15
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &periapsis);
+    
+    //line 16
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &sea_altitude);
+    
+    //line 17
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %e\n", field_buff, &inclination);
+    
+    //line 18
+    fgets(buff, BUF_S, fp);
+    sscanf(buff, "%s %s\n", field_buff, ascending);
+   
+    orbit.apoapsis = (double)apoapsis;
+    orbit.periapsis = (double)periapsis;
+    orbit.sea_altitude = (double)sea_altitude;
+    orbit.inclination = (double)inclination;
+    orbit.ascending = strcmp(ascending, "true") ? true : false;
+    
+    print_inputs(rocket, planet, orbit);
+
+    
     fclose(fp);
     return 0;
 }
 
+int print_inputs(craft& rocket, body& planet, orbit_param& orbit){
+    
+    printf("==========Planet=============\n");
+    PRINTFLT(planet.mass);
+    PRINTFLT(planet.radius);
+    PRINTFLT(planet.landing_altitude);
+    PRINTFLT(planet.rotational_period);    
+   
+    printf("==========Rocket=============\n");
+    PRINTFLT(rocket.mass_wet); 
+    PRINTFLT(rocket.mass_dry);
+    PRINTFLT(rocket.thrust); 
+    PRINTFLT(rocket.ISP);
+    
+    printf("==========Orbit=============\n");
+    PRINTFLT(orbit.apoapsis); 
+    PRINTFLT(orbit.periapsis);
+    PRINTFLT(orbit.sea_altitude); 
+    PRINTFLT(orbit.inclination);
+    PRINTBOOL(orbit.ascending);
+    printf("\n");
+    
+    return 0;
+}
 
 int write_path(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
 #ifndef _DEBUG
