@@ -5,11 +5,18 @@
 #include "integrator.h"
 
 #define R_LIMIT 10 //maximum height before termination (body radii)
-#define T_LIMIT 1E6 //maximum time for simulation (s)
+#define T_LIMIT 1E5 //maximum time for simulation (s)
 
 
-const double e_vr[] = {-3, 3};
-const double e_r[] = {50+BODY.radius+BODY.landing_altitude, 150+BODY.radius+BODY.landing_altitude};
+double e_vr[] = {-3, 3};
+double e_r[] = {50+BODY.radius+BODY.landing_altitude, 150+BODY.radius+BODY.landing_altitude};
+
+int populate_tolerances(void){
+     e_r[0] = 50+BODY.radius+BODY.landing_altitude;
+     e_r[1] = 50+BODY.radius+BODY.landing_altitude;
+     return 0;
+}
+
 double get_error(const std::vector<std::array<double,SYSDIM>>& path){
     double deltH;
     double r_tgt = 0.5*(e_r[0] + e_r[1]); //target height
@@ -23,6 +30,7 @@ double get_error(const std::vector<std::array<double,SYSDIM>>& path){
             deltH = r.mag() - r_tgt;
         }
     }
+    // PRINTFLT(deltH);
     return deltH;
 }
 
@@ -98,9 +106,19 @@ bool has_sol(const std::vector<std::array<double,SYSDIM>>& path){
 
 //TODO add out of fuel exception
 bool landed(const std::array<double,SYSDIM>& z){
-    double t = z[0];
-    double_v3 r = {z[1],z[2],z[3]};
-    double_v3 v = {z[4], z[5], z[6]};
+    const double_v3 r = vec_unpack_r(z);
+    const double_v3 vs = cross(BODY.w, r);//surface velocity at landing height
+    
+    const double t = vec_unpack_t(z);
+    const double_v3 v = (vec_unpack_v(z) - vs);//relative surface velocity
+    double m = vec_unpack_mass(z);
+    
+    double m_dry = rocket.mass_dry;
+    
+    if(m < m_dry){
+        // printf("dry tanks termination\n");
+        return 0;
+    }
     
     //if our radius is less than the landing height
     if(r.mag() < BODY.radius+BODY.landing_altitude){
@@ -115,12 +133,16 @@ bool landed(const std::array<double,SYSDIM>& z){
         // printf("re-orbit termination\n");
         return 0;
     }
+    if(v.mag() < 2*THRUST_CUT_VEL){
+        // printf("stopped termination\n");
+        return 0;
+    }
     if(r.mag() > R_LIMIT*BODY.radius){
         // printf("height termination\n");
         return 0;
     }
     if(t - zi[0] > T_LIMIT){
-        printf("time termination\n");
+        // printf("time termination\n");
         return 0;
     }
     

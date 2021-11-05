@@ -7,27 +7,34 @@
 #include "interface.h"
 #include "main.h"
 
+double burn_wait = 1;
 double thrust = 1;
 
 int main(int argc, char **argv){
 	printf("Orbits!\n");
-    BODY.init2();
     
+    load_inputs(rocket, BODY, orbit);
+   
+    BODY.init2();
+    populate_tolerances(); 
 
     std::vector<std::array<double,SYSDIM>> path;
     std::vector<std::array<double,AUXDIM>> aux_path;
-    std::array<double, SYSDIM> z0 = orbit_to_position(50E3, 9E3, 12E3, 0, false);
+    std::array<double, SYSDIM> z0 = orbit_to_position(orbit.apoapsis,
+                                                    orbit.periapsis,
+                                                    orbit.sea_altitude,
+                                                    orbit.inclination,
+                                                    orbit.ascending);
     z0[7] = rocket.mass_wet;
     std::array<double, AUXDIM> axz0 = {0,0,0};
     path.push_back(z0);
     aux_path.push_back(axz0);
-    
     // set_t_stop(10000);
     // stepper(path, aux_path, time_stop, NULL, gravsys);
-    bool sol = solve_BVP(path, aux_path);
+    bool sol = solve_BVP_time(path, aux_path);
      
     printf("Has solution: %s\n", sol?"true":"false");
-    printf("At thrust: %f\n", thrust);
+    printf("At Burn Wait Time: %f\n", burn_wait);
 
     //calulate path statistics
     get_statistics(path,aux_path);
@@ -39,7 +46,34 @@ int main(int argc, char **argv){
 	return 0;
 }
 
-int solve_BVP(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
+int solve_BVP_time(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
+    double* error = NULL;
+    int max_iter = 50;
+    
+    double lwait = 0;
+    double hwait = 1E4;
+    burn_wait = hwait/2;
+    
+    bool sol = false;
+    for(int i = 0; i< max_iter; i++){   
+        PRINTFLT(burn_wait);
+        
+        path.resize(1);
+        aux_path.resize(1);
+        stepper(path, aux_path, landed, error, gravsys);
+        if(has_sol(path)){
+            sol = true;
+            break;
+        }else{
+            double height_error = get_error(path);
+            bisect(-height_error, &burn_wait, &hwait, &lwait);
+            
+        }   
+    }
+    return sol;
+}
+
+int solve_BVP_thrust(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array<double,AUXDIM>>& aux_path){
     double* error = NULL;
     int max_iter = 50;
     
@@ -66,6 +100,7 @@ int solve_BVP(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::arr
     return sol;
 }
 
+
 int gravsys(std::array<double,SYSDIM>& r0, std::array<double,SYSDIM>& dr0, std::array<double,AUXDIM>& aux_r0){
     double M = BODY.mass;
     double m_dry = rocket.mass_dry;
@@ -83,15 +118,18 @@ int gravsys(std::array<double,SYSDIM>& r0, std::array<double,SYSDIM>& dr0, std::
     const double R = r.mag();
     const double V = v.mag();
 
+
+
     //dunamds
  
     double_v3 Ft;
-    if(m < m_dry){
+    if((m < m_dry) or (t < burn_wait)){
         Ft = {0,0,0};
-    }else if(V > 1){
-        Ft = -thrust*v/V;
+    }else if(V > THRUST_CUT_VEL){
+        Ft = -rocket.thrust*v/V;
     }else{
-        Ft = thrust*r/R;
+        // Ft = rocket.thrust*r/R;
+        Ft = {0,0,0};
     }
 
     

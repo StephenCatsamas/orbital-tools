@@ -4,7 +4,8 @@
 #include <array>
 
 #define PRINTFLT(var) printf("%s: %f at %d\n", #var, var, __LINE__)
-#define PRINTINT(var) printf("%s: %d at %d\n ", #var, var, __LINE__)
+#define PRINTINT(var) printf("%s: %d at %d\n", #var, var, __LINE__)
+#define PRINTBOOL(var) printf("%s: ", #var);printf((var ? "true" : "false"), var);printf(" at %d\n", __LINE__)
 #define PRINTDV3(var) printf("%s: (%f,%f,%f) at %d\n ", #var, var.x, var.y, var.z, __LINE__)
 
 #define STRINGIFY(var) #var
@@ -12,11 +13,11 @@
 
 #define SYSDIM 8 //t,x,y,z,dx,dy,dz,m,
 #define AUXDIM 3 //Ftx,Fty,Ftz
-#define BODY moon
+#define BODY file
 
 #define G 6.67E-11
 
-
+#define THRUST_CUT_VEL 1
 
 struct quat {
     
@@ -27,6 +28,10 @@ struct quat {
     
     quat& operator+ (const quat&);
     quat& operator* (const quat&);
+    quat& operator/ (const double);
+    quat inv (void) const;
+    quat conj (void) const;
+    double mag (void) const;
     
 };
 
@@ -45,6 +50,8 @@ struct double_v3{
     double r(const double_v3& r) const;
     
 };
+
+int rotate(double_v3& r,const double_v3& u, const double angle);
 
 //cross product
 double_v3 cross (const double_v3& u, const double_v3& v);
@@ -85,6 +92,7 @@ struct body{
 
 extern body earth;
 extern body moon;
+extern body file;
 
 struct craft{
     double mass_wet;//kg
@@ -95,6 +103,16 @@ struct craft{
 };
 
 extern craft rocket;
+
+struct orbit_param{
+    double apoapsis;            
+    double periapsis;           
+    double sea_altitude;        
+    double inclination;        
+    bool ascending;        
+};
+
+extern orbit_param orbit;
 
 
 template<typename T>

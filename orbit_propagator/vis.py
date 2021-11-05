@@ -63,7 +63,7 @@ try:
 except ValueError:
     print("ERROR: Cannot calulate Delta V")
 
-
+Ftmag = [np.linalg.norm(p) for p in Ft]
 r = [np.linalg.norm(p) for p in q]
 vr = [np.dot(p,dp)/np.linalg.norm(p) for p,dp in zip(q,dq)]
 
@@ -110,7 +110,7 @@ ax3b.plot(t,m, color = 'orange')
 ax3.set_xlabel('Time $t$ (s)');
 ax3.set_ylabel('Radius $r$ (m)');
 ax3b.set_ylabel('Mass $m$ (kg)');
-ax3b.set_ylim([0,m[0]]);
+ax3b.set_ylim([0,1.1*m[0]]);
 ax3.axhline(radius+landing_altitude, color='r')
 
 
@@ -120,8 +120,11 @@ surf_vel= [(-wz*p[1],wz*p[0],0) for p in q]
 rel_surfvel = [np.linalg.norm(np.subtract(dp, vs)) for dp,vs in zip(dq,surf_vel)]
 
 ax4.plot(r,rel_surfvel)
+ax4b = ax4.twinx()
+ax4b.plot(r,Ftmag, color = 'orange')
 ax4.set_xlabel('Radius $r$ (m)');
 ax4.set_ylabel('Surface Velocity $v_s$ (m/s)');
+ax3b.set_ylabel('Thrust (N)');
 ax4.axvline(radius+landing_altitude, color='r')
 ax4.axhline(0, color='r')
 ax4.invert_xaxis()
