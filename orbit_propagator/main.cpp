@@ -1,7 +1,7 @@
 #include <vector>
 #include <array>
 #include <stdio.h>
-#include <math.h>
+#include <cmath>
 #include "util.h"
 #include "integrator.h"
 #include "interface.h"
@@ -14,7 +14,6 @@ int main(int argc, char **argv){
 	printf("Orbits!\n");
     
     load_inputs(rocket, BODY, orbit);
-   
     BODY.init2();
     populate_tolerances(); 
 
@@ -37,10 +36,9 @@ int main(int argc, char **argv){
     printf("At Burn Wait Time: %f\n", burn_wait);
 
     //calulate path statistics
-    get_statistics(path,aux_path);
-    
+    get_statistics(path,aux_path);  
     write_meta();
-    write_path(path,aux_path);
+    // write_path(path,aux_path);
     printf("Orbited!\n");
 
 	return 0;
@@ -123,7 +121,7 @@ int gravsys(std::array<double,SYSDIM>& r0, std::array<double,SYSDIM>& dr0, std::
     //dunamds
  
     double_v3 Ft;
-    if((m < m_dry) or (t < burn_wait)){
+    if((m < m_dry) || (t < burn_wait)){
         Ft = {0,0,0};
     }else if(V > THRUST_CUT_VEL){
         Ft = -rocket.thrust*v/V;

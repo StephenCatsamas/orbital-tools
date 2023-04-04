@@ -3,10 +3,10 @@
 
 #include <array>
 
-#define PRINTFLT(var) printf("%s: %f at %d\n", #var, var, __LINE__)
-#define PRINTINT(var) printf("%s: %d at %d\n", #var, var, __LINE__)
-#define PRINTBOOL(var) printf("%s: ", #var);printf((var ? "true" : "false"), var);printf(" at %d\n", __LINE__)
-#define PRINTDV3(var) printf("%s: (%f,%f,%f) at %d\n ", #var, var.x, var.y, var.z, __LINE__)
+#define PRINTFLT(var) printf("%s: %f at %s:%d\n", #var, var, __FILE__,__LINE__)
+#define PRINTINT(var) printf("%s: %d at %s:%d\n", #var, var, __FILE__,__LINE__)
+#define PRINTBOOL(var) printf("%s: ", #var);printf((var ? "true" : "false"), var);printf(" at %s:%d\n", __FILE__,__LINE__)
+#define PRINTDV3(var) printf("%s: (%f,%f,%f) at %s:%d\n ", #var, var.x, var.y, var.z, __FILE__,__LINE__)
 
 #define STRINGIFY(var) #var
 #define NAME(var) STRINGIFY(var)
@@ -42,7 +42,6 @@ struct double_v3{
     
     double_v3& operator/ (const double);
     double operator* (const double_v3&) const;//dot product
-    double_v3& operator= (const double_v3&);
     bool operator== (const double_v3&);
     
     double mag(void) const;
@@ -149,7 +148,7 @@ double vec_unpack_mass(const T a){
 }
 
 template<typename T>
-bool ordered(T a){
+bool ordered(T){
     return true;
 }
 template<typename T, typename... Args>

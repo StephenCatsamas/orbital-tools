@@ -18,7 +18,7 @@ int populate_tolerances(void){
 }
 
 double get_error(const std::vector<std::array<double,SYSDIM>>& path){
-    double deltH;
+    double deltH = std::numeric_limits<double>::quiet_NaN();
     double r_tgt = 0.5*(e_r[0] + e_r[1]); //target height
     double r_min = std::numeric_limits<double>::max();
     for(size_t i = 0; i < path.size(); i++){
@@ -270,7 +270,6 @@ int stepper(std::vector<std::array<double,SYSDIM>>& path, std::vector<std::array
         path.push_back(zc);
         aux_path.push_back(auxz);
     }
-
 
     
     return 0;

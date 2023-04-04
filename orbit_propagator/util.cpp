@@ -1,9 +1,10 @@
-#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "util.h"
 
-struct body earth = {5.972E24, 6.371E6, 0, 86164.1};
-struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6};
-struct body file = {1,1,1,1};
+struct body earth = {5.972E24, 6.371E6, 0, 86164.1,{0,0,1}};
+struct body moon = {7.342E22, 1.7374E6, 0, 2.3606E6,{0,0,1}};
+struct body file = {1,1,1,1,{0,0,1}};
 
 struct craft rocket = {1000, 200, 10000, 360};
 
@@ -91,13 +92,6 @@ double_v3& double_v3::operator/ (const double a){
     x /= a;    
     y /= a;    
     z /= a;
-    return *this;
-}
-
-double_v3& double_v3::operator= (const double_v3& v){ 
-    x = v.x;    
-    y = v.y;    
-    z = v.z;
     return *this;
 }
 

@@ -1,16 +1,16 @@
 SRC = main.cpp util.cpp integrator.cpp interface.cpp
 INC = main.h util.h integrator.h 
-CFLAGS = /EHsc /Za \
-         -O2
+CFLAGS = -Wall -Wextra -Wno-unused-result -Wno-format-extra-args \
+         -O2 -ftree-vectorize
 # CFLAGS = -Wall
-OBJ = orbits.exe
-CC = cl
+OBJ = orbits
+CC = g++
 
 all: $(SRC) $(INC)
-	$(CC) $(CFLAGS) $(SRC) -link -out:$(OBJ)
+	$(CC) $(CFLAGS) $(SRC) -o $(OBJ)
 	
 run: all
-	$(OBJ) && vis.py
+	./$(OBJ) && py ./vis.py
 	
 profile: $(SRC) $(INC)
 	$(CC) -g -gdwarf-2 -shared-libgcc -D_DEBUG $(CFLAGS) $(SRC) -o $(OBJ)
